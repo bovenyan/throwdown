@@ -64,21 +64,38 @@ class db_api(object):
             print str(e)
             return None
 
-    def register_flow(self, proto, src_port, dst_port, app_id):
+    def register_flow(self, proto, src_port, dst_port, qos, app_id):
         try:
             conn = self.conn()
             cur = conn.cursor()
 
-            cur.execute("update {} \
-                          set proto, src_port, \
-                          dst_port, app_id\
-                          from {} \
-                          where id={}".format(self.tableflow,
-                                              proto, src_port,
-                                              dst_port)
+            cur.execute("insert into {} (protocol, src_port, \
+                          dst_port, qos_type, app_id)\
+                          values ({}, {}, {}, {}, {})".format(self.tableflow,
+                                                              proto, src_port,
+                                                              dst_port, qos, 
+                                                              ))
             conn.commit()
             conn.close()
             return True
+        except Exception, e:
+            print str(e)
+            return None
+
+    def check_registered_flow(self, proto, src_port, dst_port):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+            
+            cur.execute("select qos_type \
+                         where proto={}, src_port={}, \
+                         dst_port={}".format(self.tableflow,
+                                             proto, src_port,
+                                             dst_port))
+            res = cur.fetchone()
+            cur.close()
+            return res
+
         except Exception, e:
             print str(e)
             return None
@@ -104,3 +121,4 @@ class db_api(object):
 if __name__ == "__main__":
     cc = db_api()
     print cc.update_health(2, 200, 55.0)
+    print check_registered_flow(6, 80, 1000)
