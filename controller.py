@@ -35,6 +35,10 @@ class SimpleSwitch(app_manager.RyuApp):
         self.arptable["192.168.9.1"] = "00:00:00:00:00:91"
         self.arptable["192.168.9.2"] = "00:00:00:00:00:92"
 
+        self.arptable["192.168.1.1"] = "00:50:56:8d:c8:c6"
+        self.arptable["192.168.1.2"] = "00:50:56:8d:fd:63"
+        self.arptable["192.168.2.1"] = "00:50:56:8d:aa:52"
+        self.arptable["192.168.2.2"] = "00:50:56:8d:59:8b"
         self.arptable["192.168.3.1"] = "00:50:56:8d:6b:80"
         self.arptable["192.168.3.2"] = "00:50:56:8d:27:5e"
         self.arptable["192.168.4.1"] = "00:50:56:8d:2e:7c"
@@ -43,8 +47,8 @@ class SimpleSwitch(app_manager.RyuApp):
         self.datapaths = {}
 
         self.path_info = []  # west, east, west/east port
-        self.path_info.append(["192.168.1.1", "192.168.3.1", 1])
-        self.path_info.append(["192.168.2.1", "192.168.4.1", 3])
+        self.path_info.append(["192.168.1.1", "192.168.3.1", 8])
+        self.path_info.append(["192.168.2.1", "192.168.4.1", 9])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 1])
         self.path_info.append(["192.168.4.2", "192.168.4.1", 3])
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 2]
@@ -85,11 +89,11 @@ class SimpleSwitch(app_manager.RyuApp):
         if (81 in self.datapaths and 82 in self.datapaths):  # ready
             #for lsp_id in range(4):
             #    self.add_measure_rules(lsp_id)
-            self.add_measure_rules(2)  # sleep 
+            self.add_measure_rules(2)
             print "preparing measurements"
-            self.measurement_process = Process(target=monitor_process_callback,
-                                               args=(measure_info[2][1], 2))
-            measurement_process.start()
+            self.measurement_process[2] = Process(target=monitor_process_callback,
+                                               args=(self.measure_info[2][1], 2))
+            self.measurement_process[2].start()
             print "measurements setup done"
 
             # start a process to measure
@@ -108,10 +112,6 @@ class SimpleSwitch(app_manager.RyuApp):
         if not eth:
             return 
 
-        if eth.ethertype == ether_types.ETH_TYPE_LLDP:
-            # ignore lldp packet
-            return
-
         # handle arp
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
             pkt_arp = pkt.get_protocol(arp.arp)
@@ -121,7 +121,6 @@ class SimpleSwitch(app_manager.RyuApp):
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             return
 
-            """
             ip_pkt = pkt.get_protocol(ipv4.ipv4)
 
             # get healthest lsp
@@ -143,7 +142,6 @@ class SimpleSwitch(app_manager.RyuApp):
 
             self.packet_out(datapath, msg.data, msg.in_port,
                             self.vBundle_info[2])
-            """
 
     @set_ev_cls(event_message.EventMessage)
     def lsp_failover(self, ev):

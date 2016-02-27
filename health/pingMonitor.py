@@ -35,7 +35,7 @@ class icmp_monitor():
 
         for icmp_msg in iter(lambda: self.process.stdout.readline(), ''):
             # parse the msg
-            print icmp_msg
+            # print icmp_msg
             self.parse_msg(icmp_msg)
 
     def parse_msg(self, icmp_msg):
@@ -49,10 +49,10 @@ class icmp_monitor():
                 self.packet_loss = self.packet_loss + loss
                 self.packet_recv = self.packet_recv + 1;
                 self.reachable_msg = self.reachable_msg + 1
-
                 self.loss_count_down = self.loss_count_down -1
+
                 if (self.loss_count_down == 0):
-                    self.loss_count_down == loss_rate_agg_times
+                    self.loss_count_down = loss_rate_agg_times
                     if (self.packet_recv == 0 and self.packet_loss == 0):
                         self.loss_rate = 100.0
                     else:
@@ -89,6 +89,7 @@ class icmp_monitor():
                 self.loss_rate = 100
                 # TODO update database
                 db.update_health(self.lsp, self.latency, self.loss_rate)
+                self.reachability_count_down = latency_avg_times * 3
 
         else: # ignore
             print "received unexpected message"
@@ -102,3 +103,4 @@ def monitor_process_callback(ip, lsp):
     print "end to end monitoring start on lsp: " + str(lsp)
     monitor = icmp_monitor(ip, lsp)
     monitor.start()
+
