@@ -62,12 +62,13 @@ function arrow(x1, y1, x2, y2, length) {
 
 // Visualization of topology in a Wide Area Network
 function setup() {
+	console.log('in topo');
 	// creat canvas
-	const canvasHolder = select('#topo-main'),
+	const canvasHolder = select('topo-main'),
 	      width = canvasHolder.width,
 	      height = canvasHolder.height;
-	// console.log(width);
-	// console.log(height);
+	console.log(width);
+	console.log(height);
 	canvas = createCanvas(width, height).parent('topo-main');
 	canvas.mousePressed(onMousePressed);
 
