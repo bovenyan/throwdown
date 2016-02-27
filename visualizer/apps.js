@@ -1,4 +1,4 @@
-var topo = function (p) {
+var apps = function (p) {
 	// socket connect to server
 	var socket;
 
@@ -6,6 +6,7 @@ var topo = function (p) {
 	var nodes = [];
 	var links = [];
 	var lsps = [];
+	var flows = [];
 
 	// color schema
 	var colors = [
@@ -22,6 +23,7 @@ var topo = function (p) {
 	// counter for northstar update
 	var northStarUpdate = 0;
 	var redisUpdate = 0;
+	var mySQLUpdate = 0;
 
 	// size of canvas
 	var width;
@@ -63,14 +65,14 @@ var topo = function (p) {
 
 	// Visualization of topology in a Wide Area Network
 	p.setup = function () {
-		// console.log('in topo');
+		// console.log('in apps');
 		// creat canvas
-		const canvasHolder = p.select('#topo-main'),
+		const canvasHolder = p.select('#app-main'),
 		      width = canvasHolder.width,
 		      height = canvasHolder.height;
 		// console.log(width);
 		// console.log(height);
-		canvas = p.createCanvas(width, height).parent('topo-main');
+		canvas = p.createCanvas(width, height).parent('app-main');
 		canvas.mousePressed(onMousePressed);
 
 		// set frame rate as 25 fps
@@ -79,10 +81,10 @@ var topo = function (p) {
 		// Add buttons
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.82,
-				r: width*0.82+width*0.07,
-				u: height*0.3+height*0.2*i,
-				b: height*0.3+height*0.2*i+height*0.1,
+				l: width*0.91,
+				r: width*0.91+width*0.07,
+				u: height*0.2*i,
+				b: height*0.2*i+height*0.1,
 				show: false
 			}
 			buttons.push(button);
@@ -90,10 +92,10 @@ var topo = function (p) {
 
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.91,
-				r: width*0.91+width*0.07,
-				u: height*0.3+height*0.2*i,
-				b: height*0.3+height*0.2*i+height*0.1,
+				l: width*0.02,
+				r: width*0.02+width*0.07,
+				u: height*0.2*i,
+				b: height*0.2*i+height*0.1,
 				show: false
 			}
 			buttons.push(button);
@@ -110,8 +112,8 @@ var topo = function (p) {
 		socket.on('nodes', function(data) {
 			nodes = data;
 			for (var i = 0; i < 8; i++) {
-				nodes[i].x = p.map(nodes[i].longtitude, -130, -70, 0, width*0.8);
-				nodes[i].y = p.map(-nodes[i].latitude, -45, -25, 0, height);
+				nodes[i].x = p.map(nodes[i].longtitude, -130, -70, width*0.2, width*0.8);
+				nodes[i].y = p.map(-nodes[i].latitude, -45, -25, height*0.2, height*0.8);
 			}
 			// console.log(nodes);
 			// console.log('New nodes information received');
@@ -127,7 +129,24 @@ var topo = function (p) {
 			// console.log(data);
 			lsps = data
 			// console.log('New LSPs information received');
+
+			flows = [];
+			for (var i = 0; i < 8; i++) {
+				// console.log(lsps[i]);
+				console.log('Flow information updated');
+				var flow = {
+					lsps: [lsps[i]],
+					health: i / 4.0,
+					show: true
+				}
+				flows.push(flow);
+			}
+			// console.log(flows);
 		})
+
+		socket.on('flows', function(data) {
+			flows = data;
+		});
 	}
 
 	p.draw = function () {
@@ -146,6 +165,14 @@ var topo = function (p) {
 			} else {
 				socket.emit('redis_update');
 				redisUpdate = 0;
+			}
+
+			if (mySQLUpdate < 75) {
+				mySQLUpdate++;
+			} else {
+				// socket.emit('mysql_update');
+
+				mySQLUpdate = 0;
 			}
 		}
 
@@ -186,9 +213,11 @@ var topo = function (p) {
 		}
 
 		// LSPs
+		// console.log(buttons);
 		for (var i = 0; i < lsps.length; i++) {
 			// console.log(colors);
-			if (buttons[i].show) {
+			// if (buttons[i].show) {
+			if (false) {
 				for (var j = 0; j < lsps[i].links.length; j++) {
 					p.stroke(colors[i]);
 					p.strokeWeight(4);
@@ -200,31 +229,93 @@ var topo = function (p) {
 				}
 			}
 
-			p.stroke(0);
-			p.strokeWeight(1);
+			// p.stroke(0);
+			// p.strokeWeight(1);
+			// if (buttons[i].show) {
+			// 	p.fill(colors[i]);
+			// } else {
+			// 	p.fill(255);
+			// }
+
+			// var width = p.width;
+			// var height = p.height;
+			// // console.log(width + " " + height);
+			// var w = width*0.07;
+			// var h = height*0.1;
+			// if (i < 4) {
+			// 	// console.log('drawing button ' + (width*0.82) + " " + (height*0.3+height*0.2*i) + " " + w + " " + h);
+			// 	p.rect(width*0.82, height*0.3+height*0.2*i, w, h);
+			// 	p.textSize(h*0.2);
+			// 	p.fill(0);
+			// 	p.strokeWeight(1);
+			// 	p.text(lsps[i].name, width*0.82, height*0.3+height*0.2*i, w, h);
+			// }
+			// if (i >= 4) {
+			// 	// console.log('drawing button');
+			// 	p.rect(width*0.91, height*0.3+height*0.2*(i-4), w, h);
+			// 	p.textSize(h*0.2);
+			// 	p.fill(0);
+			// 	p.strokeWeight(1);
+			// 	p.text(lsps[i].name, width*0.91, height*0.3+height*0.2*(i-4), w, h);
+			// }
+		}
+
+		// flows
+		// console.log(flows.length);
+		for (var i = 0; i < flows.length; i++) {
+			if (buttons[i].show) {
+				// console.log(flows[i].lsps);
+				for (var j = 0; j < flows[i].lsps.length; j++) {
+					// console.log(flows[i].lsps[j].name);
+					for (var k = 0; k < flows[i].lsps[j].links.length; k++) {
+						// console.log("trying to draw flows");
+						p.stroke(colors[i]);
+						p.strokeWeight(4);
+						p.line(
+							nodes[links[flows[i].lsps[j].links[k]].endA-1].x,
+							nodes[links[flows[i].lsps[j].links[k]].endA-1].y+i*2,
+							nodes[links[flows[i].lsps[j].links[k]].endZ-1].x,
+							nodes[links[flows[i].lsps[j].links[k]].endZ-1].y+i*2);
+					}
+				}
+			}
+
+			var width = p.width;
+			var height = p.height;
+			// console.log(width + " " + height);
+			var w = width*0.07;
+			var h = height*0.1;
 			if (buttons[i].show) {
 				p.fill(colors[i]);
 			} else {
 				p.fill(255);
 			}
-
-			var width = p.width;
-			var height = p.height;
-			var w = width*0.07;
-			var h = height*0.1;
+			p.stroke(0);
+			p.strokeWeight(1);
 			if (i < 4) {
-				p.rect(width*0.82, height*0.3+height*0.2*i, w, h);
+				// console.log('drawing button ' + (width*0.82) + " " + (height*0.3+height*0.2*i) + " " + w + " " + h);
+				p.rect(width*0.91, height*0.2*i, w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text(lsps[i].name, width*0.82, height*0.3+height*0.2*i, w, h);
+				p.text("Flow " + i, width*0.91, height*0.2*i, w, h);
 			}
 			if (i >= 4) {
-				p.rect(width*0.91, height*0.3+height*0.2*(i-4), w, h);
+				// console.log('drawing button');
+				p.rect(width*0.02, height*0.2*(i-4), w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text(lsps[i].name, width*0.91, height*0.3+height*0.2*(i-4), w, h);
+				p.text("Flow " + i, width*0.02, height*0.2*(i-4), w, h);
+			}
+
+			p.stroke(colors[i]);
+			p.strokeWeight(4);
+			if (i < 4) {
+				p.line(width*0.91, height*0.2*i+h/2.0, nodes[6].x, nodes[6].y);
+			}
+			if (i >= 4) {
+				p.line(width*0.02+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
 			}
 		}
 	}
