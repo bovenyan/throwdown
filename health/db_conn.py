@@ -64,6 +64,25 @@ class db_api(object):
             print str(e)
             return None
 
+    def register_flow(self, proto, src_port, dst_port, app_id):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("update {} \
+                          set proto, src_port, \
+                          dst_port, app_id\
+                          from {} \
+                          where id={}".format(self.tableflow,
+                                              proto, src_port,
+                                              dst_port)
+            conn.commit()
+            conn.close()
+            return True
+        except Exception, e:
+            print str(e)
+            return None
+
     def update_health(self, lsp, latency, loss):
         try:
             conn = self.conn()
@@ -84,4 +103,4 @@ class db_api(object):
 
 if __name__ == "__main__":
     cc = db_api()
-    print cc.update_health(2, 200, 55.0) 
+    print cc.update_health(2, 200, 55.0)
