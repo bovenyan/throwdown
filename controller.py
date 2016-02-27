@@ -16,6 +16,7 @@ import copy
 
 from health.db_conn import db_api
 from health.pingMonitor import *
+from health.health import *
 
 class SimpleSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
@@ -117,8 +118,7 @@ class SimpleSwitch(app_manager.RyuApp):
             pkt_arp = pkt.get_protocol(arp.arp)
             self._handle_arp(datapath, in_port, eth, pkt_arp)
 
-        # handle id
-        """
+        # handle ip
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             return
 
@@ -129,13 +129,13 @@ class SimpleSwitch(app_manager.RyuApp):
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
-                               self.db.get_healthest_lsp())
+                               cal_healthest())
 
             elif(ip_pkt.proto == 17):  # udp
                 udp_pkt = pkt.get_protocol(udp.udp)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
-                               self.db.get_healthest_lsp())
+                               cal_healthest())
 
             else: # icmp
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
@@ -143,7 +143,6 @@ class SimpleSwitch(app_manager.RyuApp):
 
             self.packet_out(datapath, msg.data, msg.in_port,
                             self.vBundle_info[2])
-        """
 
     @set_ev_cls(event_message.EventMessage)
     def lsp_failover(self, ev):
