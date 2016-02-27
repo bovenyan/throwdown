@@ -10,7 +10,7 @@
   <link href="layout/css/todc-bootstrap.min.css" rel="stylesheet">
   <link href="layout/css/Common.css" rel="stylesheet">
 
-  <!-- <script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/p5.js/0.2.8/p5.min.js"></script> -->
+   <script language="javascript" type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/p5.js/0.2.8/p5.min.js"></script>
   <script language="javascript" type="text/javascript" src="libraries/p5.js"></script>
   <script language="javascript" type="text/javascript" src="libraries/p5.dom.js"></script>
   <script src="/socket.io/socket.io.js"></script>
@@ -40,8 +40,9 @@
       </div>
       <div id="navbar" class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
-          <li id="topo-btn" class="active"><a href="#">Topology</a></li>
-          <li id="app-btn"><a href="#">Application</a></li>
+          <li id="topo-btn" main-id="topo-main" class="active newboly-nav-btn"><a href="#">Topology</a></li>
+          <li id="app-btn" main-id="app-main" class="newboly-nav-btn"><a href="#">Application</a></li>
+          <li id="plot-btn" main-id="plot-main" class="newboly-nav-btn"><a href="#">Plot</a></li>
         </ul>
 
       </div>
@@ -51,13 +52,18 @@
   <!-- Main component -->
   <div class="layout-main">
 
-    <div id="topo-main" class = "jumbotron">
+    <div id="topo-main" class = "jumbotron newboly-main">
 
     </div>
 
-    <div id="app-main" class = "jumbotron">
+    <div id="app-main" class = "jumbotron newboly-main hide-main">
 
     </div>
+
+    <div id="plot-main" class = "jumbotron newboly-main hide-main">
+
+    </div>
+
   </div>
 
 
