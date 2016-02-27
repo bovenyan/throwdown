@@ -15,6 +15,7 @@ import random
 import copy
 
 from health.db_conn import db_api
+from health.pingMonitor import *
 
 class SimpleSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_0.OFP_VERSION]
@@ -37,11 +38,20 @@ class SimpleSwitch(app_manager.RyuApp):
         self.path_info.append(["192.168.4.2", "192.168.4.1", 3])
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 2]
 
+        self.measure_info = []
+        self.measure_info.append(["192.168.6.2", "192.168.6.1", 4])
+        self.measure_info.append(["192.168.7.2", "192.168.7.1", 5])
+        self.measure_info.append(["192.168.8.2", "192.168.8.1", 6])
+        self.measure_info.append(["192.168.9.2", "192.168.9.1", 7])
+
         self.lsp_rules = []  # recording the associated flow for each lsp
         self.lsp_rules.append({})  # [cookie : [rule]]
         self.lsp_rules.append({})  # [cookie : [rule]]
 
         self.db = db_api()
+
+        # triggers event listener after 10 second
+        self.measurement_process = [None, None, None, None]
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -56,17 +66,23 @@ class SimpleSwitch(app_manager.RyuApp):
         actions = [datapath.ofproto_parser.OFPActionOutput(ofproto.OFPP_CONTROLLER)]
         self.add_flow(datapath, match, actions, 0, 0)
 
-        # have all the icmp go normal
-        """
-        match = datapath.ofproto_parser.OFPMatch(dl_type=ether_types.ETH_TYPE_IP,
-                                                 nw_proto=1)
-        actions = [datapath.ofproto_parser.OFPActionOutput(ofproto.OFPP_NORMAL)]
-        self.add_flow(datapath, match, actions, 0, 1)
-        """
         if dpid == 82 or dpid == 81:    # record datapath
             self.datapaths[dpid] = datapath
 
         print "default ready"
+
+        if (81 in self.datapaths and 82 in self.datapaths):  # ready
+            #for lsp_id in range(4):
+            #    self.add_measure_rules(lsp_id)
+            self.add_measure_rules(2)  # sleep 
+            print "preparing measurements"
+            self.measurement_process = Process(target=monitor_process_callback,
+                                               args=(measure_info[2][1], 2))
+            measurement_process.start()
+            print "measurements setup done"
+
+            # start a process to measure
+
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -269,6 +285,76 @@ class SimpleSwitch(app_manager.RyuApp):
             command=ofproto.OFPFC_DELETE, out_port=ofproto.OFPP_ANY,
             out_group=ofproto.OFPG_ANY)
         datapath.send_msg(mod)
+
+    def add_measure_rules(self, lsp_id):
+        cookie = 255  # cookie will be 0xff for measurement rules
+        # west -> east
+        datapath = self.datapaths[82]
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch(dl_type=ether_types.ETH_TYPE_IP,
+                                nw_proto=1,
+                                in_port=self.measure_info[lsp_id][2])
+
+        nat_src = self.path_info[lsp_id][0]
+        nat_dst = self.path_info[lsp_id][1]
+        actions = [parser.OFPActionSetNwSrc(nat_src),
+                   parser.OFPActionSetDlSrc(self.arptable[nat_src]),
+                   parser.OFPActionSetNwDst(nat_dst),
+                   parser.OFPActionSetDlDst(self.arptable[nat_dst]),
+                   parser.OFPActionOutput(self.path_info[lsp_id][2])]
+
+        self.add_flow(datapath, match, actions, cookie)
+
+        datapath = self.datapaths[81]
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch(dl_type=ether_types.ETH_TYPE_IP,
+                                nw_proto=1,
+                                in_port=self.path_info[lsp_id][2])
+        
+        nat_src = self.measure_info[0]
+        nat_dst = self.measure_info[1]
+        actions = [parser.OFPActionSetNwSrc(nat_src),
+                   parser.OFPActionSetDlSrc(self.arptable[nat_src]),
+                   parser.OFPActionSetNwDst(nat_dst),
+                   parser.OFPActionSetDlDst(self.arptable[nat_dst]),
+                   parser.OFPActionOutput(self.measure_info[lsp_id][2])]
+        
+        self.add_flow(datapath, match, actions, cookie)
+
+        # east -> west
+        datapath = self.datapaths[81]
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch(dl_type=ether_types.ETH_TYPE_IP,
+                                nw_proto=1,
+                                in_port=self.measure_info[lsp_id][2])
+
+        nat_src = self.path_info[lsp_id][1]
+        nat_dst = self.path_info[lsp_id][0]
+        actions = [parser.OFPActionSetNwSrc(nat_src),
+                   parser.OFPActionSetDlSrc(self.arptable[nat_src]),
+                   parser.OFPActionSetNwDst(nat_dst),
+                   parser.OFPActionSetDlDst(self.arptable[nat_dst]),
+                   parser.OFPActionOutput(self.path_info[lsp_id][2])]
+
+        self.add_flow(datapath, match, actions, cookie)
+
+        datapath = self.datapaths[82]
+        parser = datapath.ofproto_parser
+        match = parser.OFPMatch(dl_type=ether_types.ETH_TYPE_IP,
+                                nw_proto=1,
+                                in_port=self.path_info[lsp_id][2])
+        
+        nat_src = self.measure_info[1]
+        nat_dst = self.measure_info[0]
+        actions = [parser.OFPActionSetNwSrc(nat_src),
+                   parser.OFPActionSetDlSrc(self.arptable[nat_src]),
+                   parser.OFPActionSetNwDst(nat_dst),
+                   parser.OFPActionSetDlDst(self.arptable[nat_dst]),
+                   parser.OFPActionOutput(self.measure_info[lsp_id][2])]
+        
+        self.add_flow(datapath, match, actions, cookie)
+
+    print "measurement ready"
 
     def packet_out(self, datapath, data, in_port, out_port):
         actions = [datapath.ofproto_parser.OFPActionOutput(out_port)]
