@@ -81,8 +81,8 @@ var apps = function (p) {
 		// Add buttons
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.91,
-				r: width*0.91+width*0.07,
+				l: width*0.82,
+				r: width*0.82+width*0.07,
 				u: height*0.2*i,
 				b: height*0.2*i+height*0.1,
 				show: false
@@ -92,8 +92,8 @@ var apps = function (p) {
 
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.02,
-				r: width*0.02+width*0.07,
+				l: width*0.1,
+				r: width*0.1+width*0.07,
 				u: height*0.2*i,
 				b: height*0.2*i+height*0.1,
 				show: false
@@ -133,10 +133,10 @@ var apps = function (p) {
 			flows = [];
 			for (var i = 0; i < 8; i++) {
 				// console.log(lsps[i]);
-				console.log('Flow information updated');
+				// console.log('Flow information updated');
 				var flow = {
 					lsps: [lsps[i]],
-					health: i / 4.0,
+					health: p.random(1),
 					show: true
 				}
 				flows.push(flow);
@@ -171,7 +171,9 @@ var apps = function (p) {
 				mySQLUpdate++;
 			} else {
 				// socket.emit('mysql_update');
-
+				// for (var i = 0; i < flows.length; i++) {
+				// 	flows[i].health = p.random(1);
+				// }
 				mySQLUpdate = 0;
 			}
 		}
@@ -285,37 +287,38 @@ var apps = function (p) {
 			// console.log(width + " " + height);
 			var w = width*0.07;
 			var h = height*0.1;
-			if (buttons[i].show) {
-				p.fill(colors[i]);
-			} else {
-				p.fill(255);
-			}
+			// if (buttons[i].show) {
+			// 	p.fill(colors[i]);
+			// } else {
+			// 	p.fill(255);
+			// }
+			p.fill(255-255*flows[i].health,255*flows[i].health, 0);
 			p.stroke(0);
 			p.strokeWeight(1);
 			if (i < 4) {
 				// console.log('drawing button ' + (width*0.82) + " " + (height*0.3+height*0.2*i) + " " + w + " " + h);
-				p.rect(width*0.91, height*0.2*i, w, h);
+				p.rect(width*0.82, height*0.2*i, w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text("Flow " + i, width*0.91, height*0.2*i, w, h);
+				p.text("Interface " + i, width*0.82, height*0.2*i, w, h);
 			}
 			if (i >= 4) {
 				// console.log('drawing button');
-				p.rect(width*0.02, height*0.2*(i-4), w, h);
+				p.rect(width*0.1, height*0.2*(i-4), w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text("Flow " + i, width*0.02, height*0.2*(i-4), w, h);
+				p.text("Interface " + (i - 4), width*0.1, height*0.2*(i-4), w, h);
 			}
 
-			p.stroke(colors[i]);
+			p.stroke('rgba(0,0,0,0.5)');
 			p.strokeWeight(4);
 			if (i < 4) {
-				p.line(width*0.91, height*0.2*i+h/2.0, nodes[6].x, nodes[6].y);
+				p.line(width*0.82, height*0.2*i+h/2.0, nodes[6].x, nodes[6].y);
 			}
 			if (i >= 4) {
-				p.line(width*0.02+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
+				p.line(width*0.1+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
 			}
 		}
 	}

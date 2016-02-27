@@ -243,7 +243,7 @@ io.sockets.on('connection',
 								headers: header
 							}).on('complete', function(data) {
 								for (var i = 0; i < 88; i++) {
-									if (data[i].name.includes("GROUP_ELEVEN")) {
+									if (data[i].name.includes("GROUP_EIGHT")) {
 									// if (data[i].name.includes("GROUP_EIGHT")) {
 										// console.log(data[i].liveProperties.ero);
 										var lsp = {
@@ -288,7 +288,7 @@ io.sockets.on('connection',
 				}).on('complete', function(data) {
 					var tmp = [];
 					for (var i = 0; i < 88; i++) {
-						if (data[i].name.includes("GROUP_ELEVEN")) {
+						if (data[i].name.includes("GROUP_EIGHT")) {
 						// if (data[i].name.includes("GROUP_EIGHT")) {
 							// console.log(data[i].liveProperties.ero);
 							var lsp = {
