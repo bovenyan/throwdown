@@ -20,7 +20,7 @@ arp -s 192.168.6.2 00:00:00:00:00:61
 ovs-vsctl add-port vBundle mEth2 -- set interface mEth2 type=internal
 ovs-vsctl set interface mEth2 mac=\"00:00:00:00:00:71\"
 ifconfig mEth2 192.168.7.1 netmask 255.255.255.0
-arp -s 192.168.7.2 00:00:00:00:00:72
+arp -s 192.168.7.2 00:00:00:00:00:71
 
 ovs-vsctl add-port vBundle mEth3 -- set interface mEth3 type=internal
 ovs-vsctl set interface mEth3 mac=\"00:00:00:00:00:81\"
