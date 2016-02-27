@@ -26,6 +26,15 @@ class SimpleSwitch(app_manager.RyuApp):
         self.arptable = {}
         self.arptable["192.168.5.1"] = "00:00:00:00:00:51"
         self.arptable["192.168.5.2"] = "00:00:00:00:00:52"
+        self.arptable["192.168.6.1"] = "00:00:00:00:00:61"
+        self.arptable["192.168.6.2"] = "00:00:00:00:00:62"
+        self.arptable["192.168.7.1"] = "00:00:00:00:00:71"
+        self.arptable["192.168.7.2"] = "00:00:00:00:00:72"
+        self.arptable["192.168.8.1"] = "00:00:00:00:00:81"
+        self.arptable["192.168.8.2"] = "00:00:00:00:00:82"
+        self.arptable["192.168.9.1"] = "00:00:00:00:00:91"
+        self.arptable["192.168.9.2"] = "00:00:00:00:00:92"
+
         self.arptable["192.168.3.1"] = "00:50:56:8d:6b:80"
         self.arptable["192.168.3.2"] = "00:50:56:8d:27:5e"
         self.arptable["192.168.4.1"] = "00:50:56:8d:2e:7c"
@@ -34,6 +43,8 @@ class SimpleSwitch(app_manager.RyuApp):
         self.datapaths = {}
 
         self.path_info = []  # west, east, west/east port
+        self.path_info.append(["192.168.1.1", "192.168.3.1", 1])
+        self.path_info.append(["192.168.2.1", "192.168.4.1", 3])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 1])
         self.path_info.append(["192.168.4.2", "192.168.4.1", 3])
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 2]
@@ -108,6 +119,9 @@ class SimpleSwitch(app_manager.RyuApp):
 
         # handle id
         if eth.ethertype == ether_types.ETH_TYPE_IP:
+            return
+
+            """
             ip_pkt = pkt.get_protocol(ipv4.ipv4)
 
             # get healthest lsp
@@ -129,6 +143,7 @@ class SimpleSwitch(app_manager.RyuApp):
 
             self.packet_out(datapath, msg.data, msg.in_port,
                             self.vBundle_info[2])
+            """
 
     @set_ev_cls(event_message.EventMessage)
     def lsp_failover(self, ev):
@@ -181,6 +196,10 @@ class SimpleSwitch(app_manager.RyuApp):
         datapath.send_msg(out)
 
     def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0):
+        if not (81 in datapaths and 82 in datapaths):
+            print "ignore ... ovs not ready"
+            return
+
         if (sPort is None):
             cookie = random.randint(1,65535)
         else:
@@ -311,8 +330,8 @@ class SimpleSwitch(app_manager.RyuApp):
                                 nw_proto=1,
                                 in_port=self.path_info[lsp_id][2])
         
-        nat_src = self.measure_info[0]
-        nat_dst = self.measure_info[1]
+        nat_src = self.measure_info[lsp_id][0]
+        nat_dst = self.measure_info[lsp_id][1]
         actions = [parser.OFPActionSetNwSrc(nat_src),
                    parser.OFPActionSetDlSrc(self.arptable[nat_src]),
                    parser.OFPActionSetNwDst(nat_dst),
@@ -344,8 +363,8 @@ class SimpleSwitch(app_manager.RyuApp):
                                 nw_proto=1,
                                 in_port=self.path_info[lsp_id][2])
         
-        nat_src = self.measure_info[1]
-        nat_dst = self.measure_info[0]
+        nat_src = self.measure_info[lsp_id][1]
+        nat_dst = self.measure_info[lsp_id][0]
         actions = [parser.OFPActionSetNwSrc(nat_src),
                    parser.OFPActionSetDlSrc(self.arptable[nat_src]),
                    parser.OFPActionSetNwDst(nat_dst),
