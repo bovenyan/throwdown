@@ -176,7 +176,7 @@ io.sockets.on('connection',
 					data: payload,
 					verify: false
 				}).on('complete', function(data) {
-					console.log(data);
+					// console.log(data);
 
 					var header = {Authorization: data.token_type + " " + data.access_token};
 
@@ -186,7 +186,7 @@ io.sockets.on('connection',
 					}).on('complete', function(data) {
 						// use socket to send nodes information to browser
 
-						console.log(data);
+						// console.log(data);
 						for (var i = 0; i < 8; i++) {
 							var node = {
 								id: data[i].nodeIndex,

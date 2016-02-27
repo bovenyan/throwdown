@@ -57,7 +57,7 @@ var topo = function (p) {
 		p.vertex(5*length,6);
 		p.vertex(5*length,2);
 		p.vertex(0,2);
-		p.endShape(CLOSE);
+		p.endShape(p.CLOSE);
 		p.pop();
 	}
 
@@ -110,8 +110,8 @@ var topo = function (p) {
 		socket.on('nodes', function(data) {
 			nodes = data;
 			for (var i = 0; i < 8; i++) {
-				nodes[i].x = map(nodes[i].longtitude, -130, -70, 0, width*0.8);
-				nodes[i].y = map(-nodes[i].latitude, -45, -25, 0, height);
+				nodes[i].x = p.map(nodes[i].longtitude, -130, -70, 0, width*0.8);
+				nodes[i].y = p.map(-nodes[i].latitude, -45, -25, 0, height);
 			}
 			// console.log(nodes);
 			// console.log('New nodes information received');
@@ -164,13 +164,13 @@ var topo = function (p) {
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5);
 			p.fill('rgba(0,0,0,'+links[i].utilA2Z+')');
 			p.noStroke();
-			p.arrow(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5, 10);
+			arrow(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5, 10);
 			p.stroke('rgba(0,0,0,0.5)');
 			p.strokeWeight(5*links[i].utilZ2A);
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5);
 			p.fill('rgba(0,0,0,'+links[i].utilZ2A+')');
 			p.noStroke();
-			p.arrow(nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5, nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, 10);
+			arrow(nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5, nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, 10);
 		}
 
 		// Nodes
@@ -207,6 +207,9 @@ var topo = function (p) {
 			} else {
 				p.fill(255);
 			}
+
+			var width = p.width;
+			var height = p.height;
 			var w = width*0.07;
 			var h = height*0.1;
 			if (i < 4) {

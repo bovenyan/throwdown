@@ -44,7 +44,7 @@ var apps = function (p) {
 	}
 
 	function arrow(x1, y1, x2, y2, length) {
-		var angle = atan2(y2-y1, x2-x1);
+		var angle = p.atan2(y2-y1, x2-x1);
 		// console.log(angle + " from (" + x1 + "," + y1 + ") to (" + x2 + "," + y2 + ")");
 		p.push();
 		p.translate(x1,y1);
@@ -57,7 +57,7 @@ var apps = function (p) {
 		p.vertex(5*length,6);
 		p.vertex(5*length,2);
 		p.vertex(0,2);
-		p.endShape(CLOSE);
+		p.endShape(p.CLOSE);
 		p.pop();
 	}
 
@@ -110,8 +110,8 @@ var apps = function (p) {
 		socket.on('nodes', function(data) {
 			nodes = data;
 			for (var i = 0; i < 8; i++) {
-				nodes[i].x = map(nodes[i].longtitude, -130, -70, 0, width*0.8);
-				nodes[i].y = map(-nodes[i].latitude, -45, -25, 0, height);
+				nodes[i].x = p.map(nodes[i].longtitude, -130, -70, width*0.2, width*0.8);
+				nodes[i].y = p.map(-nodes[i].latitude, -45, -25, height*0.2, height*0.8);
 			}
 			// console.log(nodes);
 			// console.log('New nodes information received');
@@ -164,13 +164,13 @@ var apps = function (p) {
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5);
 			p.fill('rgba(0,0,0,'+links[i].utilA2Z+')');
 			p.noStroke();
-			p.arrow(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5, 10);
+			arrow(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5, 10);
 			p.stroke('rgba(0,0,0,0.5)');
 			p.strokeWeight(5*links[i].utilZ2A);
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5);
 			p.fill('rgba(0,0,0,'+links[i].utilZ2A+')');
 			p.noStroke();
-			p.arrow(nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5, nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, 10);
+			arrow(nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5, nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, 10);
 		}
 
 		// Nodes
@@ -186,6 +186,7 @@ var apps = function (p) {
 		}
 
 		// LSPs
+		// console.log(buttons);
 		for (var i = 0; i < lsps.length; i++) {
 			// console.log(colors);
 			if (buttons[i].show) {
@@ -207,9 +208,14 @@ var apps = function (p) {
 			} else {
 				p.fill(255);
 			}
+
+			var width = p.width;
+			var height = p.height;
+			// console.log(width + " " + height);
 			var w = width*0.07;
 			var h = height*0.1;
 			if (i < 4) {
+				// console.log('drawing button ' + (width*0.82) + " " + (height*0.3+height*0.2*i) + " " + w + " " + h);
 				p.rect(width*0.82, height*0.3+height*0.2*i, w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
@@ -217,6 +223,7 @@ var apps = function (p) {
 				p.text(lsps[i].name, width*0.82, height*0.3+height*0.2*i, w, h);
 			}
 			if (i >= 4) {
+				// console.log('drawing button');
 				p.rect(width*0.91, height*0.3+height*0.2*(i-4), w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
