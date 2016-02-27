@@ -41,16 +41,34 @@ class db_api(object):
             #res = int(cur.fetchone()[0])
             # TODO work on the lsp healthest selection
 
-            return 1
+            return 2
         except Exception, e:
             print str(e)
             return -1
+
+    def get_lsp_metrix(self, lsp):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("select latency,\
+                         loss_rate, bandwidth,\
+                         utility, flow_no\
+                         from {} \
+                         where id={}".format(self.tablelsp,
+                                             lsp+1))
+            res=cur.fetchone()
+            cur.close()
+            return res
+        except Exception, e:
+            print str(e)
+            return None
 
     def update_health(self, lsp, latency, loss):
         try:
             conn = self.conn()
             cur = conn.cursor()
-            
+
             cur.execute("update {} \
                          set latency={},\
                          loss_rate={}\

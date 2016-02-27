@@ -118,6 +118,7 @@ class SimpleSwitch(app_manager.RyuApp):
             self._handle_arp(datapath, in_port, eth, pkt_arp)
 
         # handle id
+        """
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             return
 
@@ -142,6 +143,7 @@ class SimpleSwitch(app_manager.RyuApp):
 
             self.packet_out(datapath, msg.data, msg.in_port,
                             self.vBundle_info[2])
+        """
 
     @set_ev_cls(event_message.EventMessage)
     def lsp_failover(self, ev):
