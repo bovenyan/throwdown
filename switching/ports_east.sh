@@ -33,7 +33,8 @@ ifconfig mEth4 192.168.9.1 netmask 255.255.255.0
 arp -s 192.168.9.2 00:00:00:00:00:91
 
 # set dpid to be first dataport
-ovs-vsctl set-controller vBundle tcp:127.0.0.1:6633
+ovs-vsctl set-controller vBundle tcp:10.10.2.227:6633
+ovs-ofctl set bridge vBundle protocols=OpenFlow13
 # verify settings
 ovs-ofctl show vBundle
 arp -n | grep CM
