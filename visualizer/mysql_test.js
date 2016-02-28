@@ -12,7 +12,7 @@ connection.connect();
 connection.query('select * from lsp', function(err, results, fields) {
   if (err) return console.log(err);
 
-  console.log(JSON.stringify(results));
+  console.log(JSON.parse(JSON.stringify(results)));
 });
 
 connection.end();

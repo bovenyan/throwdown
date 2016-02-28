@@ -3,6 +3,7 @@ var http = require('http');
 var path = require('path');
 var rest = require('restler'); // Load restler rest api
 var redis = require('redis');
+var mysql = require('mysql');
 
 function handleRequest(req, res) {
   var pathname = req.url;
@@ -91,11 +92,19 @@ io.sockets.on('connection',
 		var nodes = [];
 		var links = [];
 		var lsps = [];
+		var interfaces = [];
 
 		var keyList = [];
 		var outputList = [];
 
 		var redisClient = redis.createClient(6379, '10.10.4.252');
+		var mysqlClient = mysql.createConnection({
+			host: 'localhost',
+			port: 9000,
+			user: 'root',
+			password: '',
+			database: 'myboly'
+		});
 
 		function findNode(ip) {
 			for (var i = 0; i < nodes.length; i++) {
@@ -176,7 +185,7 @@ io.sockets.on('connection',
 					data: payload,
 					verify: false
 				}).on('complete', function(data) {
-					// console.log(data);
+					console.log(data);
 
 					var header = {Authorization: data.token_type + " " + data.access_token};
 
@@ -243,7 +252,7 @@ io.sockets.on('connection',
 								headers: header
 							}).on('complete', function(data) {
 								for (var i = 0; i < 88; i++) {
-									if (data[i].name.includes("GROUP_ELEVEN")) {
+									if (data[i].name.includes("GROUP_EIGHT")) {
 									// if (data[i].name.includes("GROUP_EIGHT")) {
 										// console.log(data[i].liveProperties.ero);
 										var lsp = {
@@ -288,7 +297,7 @@ io.sockets.on('connection',
 				}).on('complete', function(data) {
 					var tmp = [];
 					for (var i = 0; i < 88; i++) {
-						if (data[i].name.includes("GROUP_ELEVEN")) {
+						if (data[i].name.includes("GROUP_EIGHT")) {
 						// if (data[i].name.includes("GROUP_EIGHT")) {
 							// console.log(data[i].liveProperties.ero);
 							var lsp = {
@@ -317,6 +326,27 @@ io.sockets.on('connection',
 
 		socket.on('redis_update', function() {
 			getbps();
+		});
+
+		socket.on('mysql_lsps', function() {
+				mysqlClient.query('select * from lsp', function (err, results, fields) {
+				if (err) return console.log(err);
+
+				// console.log(JSON.stringify(results));
+				// console.log(JSON.parse(JSON.stringify(results))[0]);
+				var data = JSON.parse(JSON.stringify(results));
+				interfaces = [];
+				for (var i = 0; i < 8; i++) {
+					if (i < 4) {
+						interfaces.push(data[i+4]);
+					} else {
+						interfaces.push(data[i-4]);
+					}
+				}
+				// console.log(interfaces);
+				socket.emit('mysql_lsps_answer', interfaces);
+				console.log('LSP information in MySQL sent to client');
+			});
 		});
 
 		// listen to disconnet information

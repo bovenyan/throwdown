@@ -35,6 +35,7 @@ var apps = function (p) {
 	// mouse press event handler
 	function onMousePressed() {
 		for (var i = 0; i < buttons.length; i++) {
+			console.log(i);
 			if (p.mouseX > buttons[i].l && p.mouseX < buttons[i].r && p.mouseY > buttons[i].u && p.mouseY < buttons[i].b) {
 				if (buttons[i].show) {
 					buttons[i].show = false;
@@ -42,6 +43,13 @@ var apps = function (p) {
 					buttons[i].show = true;
 				}
 			}
+		}
+	}
+
+	function mouseIn(mx, my, i) {
+		// console.log(i);
+		if (mx > buttons[i].l && mx < buttons[i].r && my > buttons[i].u && my < buttons[i].b) {
+			return true;
 		}
 	}
 
@@ -53,11 +61,11 @@ var apps = function (p) {
 		p.rotate(angle);
 		p.beginShape();
 		p.vertex(0,-2);
-		p.vertex(5*length,-2);
-		p.vertex(5*length,-6);
+		p.vertex(7*length,-2);
+		p.vertex(7*length,-6);
 		p.vertex(9*length,0);
-		p.vertex(5*length,6);
-		p.vertex(5*length,2);
+		p.vertex(7*length,6);
+		p.vertex(7*length,2);
 		p.vertex(0,2);
 		p.endShape(p.CLOSE);
 		p.pop();
@@ -81,8 +89,8 @@ var apps = function (p) {
 		// Add buttons
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.91,
-				r: width*0.91+width*0.07,
+				l: width*0.82,
+				r: width*0.82+width*0.07,
 				u: height*0.2*i,
 				b: height*0.2*i+height*0.1,
 				show: false
@@ -92,8 +100,8 @@ var apps = function (p) {
 
 		for (var i = 0; i < 4; i++) {
 			var button = {
-				l: width*0.02,
-				r: width*0.02+width*0.07,
+				l: width*0.1,
+				r: width*0.1+width*0.07,
 				u: height*0.2*i,
 				b: height*0.2*i+height*0.1,
 				show: false
@@ -130,27 +138,30 @@ var apps = function (p) {
 			lsps = data
 			// console.log('New LSPs information received');
 
-			flows = [];
-			for (var i = 0; i < 8; i++) {
-				// console.log(lsps[i]);
-				console.log('Flow information updated');
-				var flow = {
-					lsps: [lsps[i]],
-					health: i / 4.0,
-					show: true
-				}
-				flows.push(flow);
-			}
+			socket.emit('mysql_lsps');
+			// flows = [];
+			// for (var i = 0; i < 8; i++) {
+			// 	// console.log(lsps[i]);
+			// 	// console.log('Flow information updated');
+			// 	var flow = {
+			// 		lsps: [lsps[i]],
+			// 		health: p.random(1),
+			// 		show: true
+			// 	}
+			// 	flows.push(flow);
+			// }
 			// console.log(flows);
 		})
 
-		socket.on('flows', function(data) {
+		socket.on('mysql_lsps_answer', function(data) {
 			flows = data;
 		});
 	}
 
 	p.draw = function () {
 
+		// console.log(buttons);
+		// console.log(flows.length);
 		// counting whether to update northstar informations && redis information
 		if (nodes.length == 8 && links.length == 15 && lsps.length == 8) {
 			if (northStarUpdate < 75) {
@@ -167,13 +178,15 @@ var apps = function (p) {
 				redisUpdate = 0;
 			}
 
-			if (mySQLUpdate < 75) {
-				mySQLUpdate++;
-			} else {
-				// socket.emit('mysql_update');
-
-				mySQLUpdate = 0;
-			}
+			// if (mySQLUpdate < 75) {
+			// 	mySQLUpdate++;
+			// } else {
+			// 	socket.emit('mysql_lsps');
+			// 	// for (var i = 0; i < flows.length; i++) {
+			// 	// 	flows[i].health = p.random(1);
+			// 	// }
+			// 	mySQLUpdate = 0;
+			// }
 		}
 
 		p.background(255);
@@ -260,23 +273,48 @@ var apps = function (p) {
 			// }
 		}
 
+		for (var i = 4; i < 8; i++) {
+			p.stroke('rgba(0,0,0,0.5)');
+			p.strokeWeight(4);
+			p.line(p.width*0.1, p.height*0.2*(i-4)+p.height*0.05, p.width*0.05, p.height*0.35);
+		}
+
+		for (var i = 0; i < 4; i++) {
+			p.stroke('rgba(0,0,0,0.5)');
+			p.strokeWeight(4);
+			p.line(p.width*0.89, p.height*0.2*i+p.height*0.05, p.width*0.95, p.height*0.35);
+		}
+
+		p.noStroke();
+		p.fill('rgba(0,192,229,0.5)');
+		p.ellipse(p.width*0.05, p.height*0.35, 50, 50);
+		p.stroke(0);
+		p.strokeWeight(2);
+		p.fill(0);
+		p.text("OVS", p.width*0.05-25, p.height*0.35+50);
+
+		p.noStroke();
+		p.fill('rgba(0,192,229,0.5)');
+		p.ellipse(p.width*0.95, p.height*0.35, 50, 50);
+		p.stroke(0);
+		p.strokeWeight(2);
+		p.fill(0);
+		p.text("OVS", p.width*0.95-25, p.height*0.35+50);
+
 		// flows
 		// console.log(flows.length);
 		for (var i = 0; i < flows.length; i++) {
-			if (buttons[i].show) {
+			if (mouseIn(p.mouseX, p.mouseY, i)) {
 				// console.log(flows[i].lsps);
-				for (var j = 0; j < flows[i].lsps.length; j++) {
-					// console.log(flows[i].lsps[j].name);
-					for (var k = 0; k < flows[i].lsps[j].links.length; k++) {
-						// console.log("trying to draw flows");
-						p.stroke(colors[i]);
-						p.strokeWeight(4);
-						p.line(
-							nodes[links[flows[i].lsps[j].links[k]].endA-1].x,
-							nodes[links[flows[i].lsps[j].links[k]].endA-1].y+i*2,
-							nodes[links[flows[i].lsps[j].links[k]].endZ-1].x,
-							nodes[links[flows[i].lsps[j].links[k]].endZ-1].y+i*2);
-					}
+				for (var j = 0; j < lsps[i].links.length; j++) {
+					// console.log("trying to draw flows");
+					p.stroke(colors[i]);
+					p.strokeWeight(4);
+					p.line(
+						nodes[links[lsps[i].links[j]].endA-1].x,
+						nodes[links[lsps[i].links[j]].endA-1].y+i*2,
+						nodes[links[lsps[i].links[j]].endZ-1].x,
+						nodes[links[lsps[i].links[j]].endZ-1].y+i*2);
 				}
 			}
 
@@ -285,37 +323,52 @@ var apps = function (p) {
 			// console.log(width + " " + height);
 			var w = width*0.07;
 			var h = height*0.1;
-			if (buttons[i].show) {
-				p.fill(colors[i]);
+			// if (buttons[i].show) {
+			// 	p.fill(colors[i]);
+			// } else {
+			// 	p.fill(255);
+			// }
+			if (mouseIn(p.mouseX, p.mouseY, i)) {
+				p.noStroke();
+				p.fill(255-255*flows[i].bandwidth/1000, 255*flows[i].bandwidth/1000, 0);
+				if (i < 4) {
+					arrow(width*0.82, height*0.2*i+h/2, width*0.1, height*0.2*i+h/2, (width*0.72)*0.1);
+				} else {
+					arrow(width*0.1+w, height*0.2*(i-4)+h/2, width*0.82, height*0.2*(i-4)+h/2, (width*0.72)*0.1);
+				}
 			} else {
-				p.fill(255);
+				// var color = 'rgba('+(255-255*flows[i].bandwidth/1000)+','+(255*flows[i].bandwidth/1000)+',0,0.5)';
+				// console.log(color);
+				// p.fill('rgba('+(255-255*flows[i].bandwidth/1000)+','+(255*flows[i].bandwidth/1000)+',0,0.5)');
+				// p.fill(0);
+				p.fill((255-255*flows[i].bandwidth/1000)*0.5, 255*flows[i].bandwidth/1000*0.5, 0);
 			}
 			p.stroke(0);
 			p.strokeWeight(1);
 			if (i < 4) {
 				// console.log('drawing button ' + (width*0.82) + " " + (height*0.3+height*0.2*i) + " " + w + " " + h);
-				p.rect(width*0.91, height*0.2*i, w, h);
+				p.rect(width*0.82, height*0.2*i, w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text("Flow " + i, width*0.91, height*0.2*i, w, h);
+				p.text("Interface " + i, width*0.82, height*0.2*i, w, h);
 			}
 			if (i >= 4) {
 				// console.log('drawing button');
-				p.rect(width*0.02, height*0.2*(i-4), w, h);
+				p.rect(width*0.1, height*0.2*(i-4), w, h);
 				p.textSize(h*0.2);
 				p.fill(0);
 				p.strokeWeight(1);
-				p.text("Flow " + i, width*0.02, height*0.2*(i-4), w, h);
+				p.text("Interface " + (i - 4), width*0.1, height*0.2*(i-4), w, h);
 			}
 
-			p.stroke(colors[i]);
+			p.stroke('rgba(0,0,0,0.5)');
 			p.strokeWeight(4);
 			if (i < 4) {
-				p.line(width*0.91, height*0.2*i+h/2.0, nodes[6].x, nodes[6].y);
+				p.line(width*0.82, height*0.2*i+h/2.0, nodes[6].x, nodes[6].y);
 			}
 			if (i >= 4) {
-				p.line(width*0.02+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
+				p.line(width*0.1+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
 			}
 		}
 	}
