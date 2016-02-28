@@ -1,5 +1,5 @@
 from db_conn import db_api
-
+import random
 db = db_api()
 
 def fetch_metrix():
@@ -42,22 +42,28 @@ def cal_healthest(qos=0):
     highest_score = 0.0
     winner = 1
 
-    if (qos == 0):  # default
+    if (qos == 0):  # greedy 
         for lsp in range(4):
             score[lsp] = bw[lsp] + (1-latency[lsp]) + (1-loss[lsp])
             if (score[lsp] > highest_score):
                 winner = lsp
                 highest_score = score[lsp]
 
-        return winner 
+        return winner
 
-    if (qos == 1):  # tcp 
+    if (qos == 1):  # proportionaly  
+        sum_bw = sum(bw)
         for lsp in range(4):
-            score[lsp] = bw[lsp] + (1-loss[lsp])
-            if (score[lsp] > highest_score):
-                winner = lsp
-                highest_score = score[lsp]
-        return winner 
+            bw[lsp] = bw[lsp]/sum_bw
+        bw = [0] + bw
+        randf = random.random()
+        print bw, randf
+        for lsp in range(4):
+            bw[lsp+1] = bw[lsp] + bw[lsp+1]
+            if randf >= bw[lsp] and randf < bw[lsp+1]:
+                return lsp
+        
+        return random.randint(0,3)
 
     if (qos == 2):  # udp
         for lsp in range(4):
