@@ -1,4 +1,5 @@
 import MySQLdb
+import datetime
 
 class db_api(object):
     def __init__(self):
@@ -53,7 +54,7 @@ class db_api(object):
 
             cur.execute("select latency,\
                          loss_rate, bandwidth,\
-                         utility, flow_no\
+                         utility, flow_no, last_redis_update\
                          from {} \
                          where id={}".format(self.tablelsp,
                                              lsp+1))
@@ -73,7 +74,7 @@ class db_api(object):
                           dst_port, qos_type, app_id)\
                           values ({}, {}, {}, {}, {})".format(self.tableflow,
                                                               proto, src_port,
-                                                              dst_port, qos, 
+                                                              dst_port, qos,
                                                               ))
             conn.commit()
             conn.close()
@@ -82,23 +83,57 @@ class db_api(object):
             print str(e)
             return None
 
-    def check_registered_flow(self, proto, src_port, dst_port):
+    def check_registered_qos(self, proto, src_port, dst_port):
         try:
             conn = self.conn()
             cur = conn.cursor()
-            
-            cur.execute("select qos_type \
-                         where proto={}, src_port={}, \
+
+            cur.execute("select qos_type from {} \
+                         where protocol={} and src_port={} and \
                          dst_port={}".format(self.tableflow,
                                              proto, src_port,
                                              dst_port))
             res = cur.fetchone()
-            cur.close()
-            return res
+            
+            if res is None:
+                return None
+            else:
+                return int(res)
 
         except Exception, e:
             print str(e)
             return None
+
+    def commit_flow(self, found, cookie, lsp, src_port,
+                      dst_port, qos_type, app_id=100):
+        try:
+            if found:
+                conn = self.conn()
+                cur = conn.cursor()
+                cur.execute("update {} \
+                             set cookie={}, born={},  \
+                             where src_port={} and \
+                             dst_port={}".format(self.tableflow, cookie,
+                                                 datatime.now(), sPort, dPort))
+                conn.commit()
+                conn.close()
+                return True
+
+            else:
+                conn = self.conn()
+                cur = conn.cursor()
+                cur.execute("insert into (cookie, protocol, \
+                             src_port, dst_port, born, app_id)\
+                             values ({}, {}, {}, {}, {}, \
+                             {})".format(self.cookie, proto, src_port,
+                                         dst_port, datatime.now(), app_id))
+                conn.commit()
+                conn.close()
+                return True
+
+        except Exception, e:
+            print str(e)
+            return False
 
     def update_health(self, lsp, latency, loss):
         try:
@@ -120,5 +155,5 @@ class db_api(object):
 
 if __name__ == "__main__":
     cc = db_api()
-    print cc.update_health(2, 200, 55.0)
-    print check_registered_flow(6, 80, 1000)
+    # print cc.update_health(2, 200, 55.0)
+    print cc.check_registered_flow(6, 80, 1000)
