@@ -60,7 +60,6 @@ class SimpleSwitch(app_manager.RyuApp):
         self.path_info.append(["192.168.2.2", "192.168.2.1", 2])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 3])
         self.path_info.append(["192.168.4.2", "192.168.4.1", 4])
-        
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 5]
 
         self.measure_info = []
@@ -154,8 +153,9 @@ class SimpleSwitch(app_manager.RyuApp):
 
             elif(ip_pkt.proto == 17):  # udp
                 udp_pkt = pkt.get_protocol(udp.udp)
-                qos = db.check_registered_flow(17, udp_pkt.src_port,
-                                               udp_pkt.dst_port)
+                # qos = db.check_registered_flow(17, udp_pkt.src_port,
+                #                               udp_pkt.dst_port)
+                qos = 1
                 allocated_lsp = cal_healthest(qos)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
