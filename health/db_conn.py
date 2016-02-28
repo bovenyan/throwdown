@@ -73,7 +73,7 @@ class db_api(object):
                           dst_port, qos_type, app_id)\
                           values ({}, {}, {}, {}, {})".format(self.tableflow,
                                                               proto, src_port,
-                                                              dst_port, qos, 
+                                                              dst_port, qos,
                                                               ))
             conn.commit()
             conn.close()
@@ -87,18 +87,22 @@ class db_api(object):
             conn = self.conn()
             cur = conn.cursor()
             
-            cur.execute("select qos_type \
-                         where proto={}, src_port={}, \
+            cur.execute("select qos_type from {} \
+                         where protocol={} and src_port={} and \
                          dst_port={}".format(self.tableflow,
                                              proto, src_port,
                                              dst_port))
             res = cur.fetchone()
             cur.close()
+            
+            if res is None:
+                res = 0
             return res
 
         except Exception, e:
             print str(e)
             return None
+
 
     def update_health(self, lsp, latency, loss):
         try:
@@ -120,5 +124,5 @@ class db_api(object):
 
 if __name__ == "__main__":
     cc = db_api()
-    print cc.update_health(2, 200, 55.0)
-    print check_registered_flow(6, 80, 1000)
+    # print cc.update_health(2, 200, 55.0)
+    print cc.check_registered_flow(6, 80, 1000)

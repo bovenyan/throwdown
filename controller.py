@@ -48,8 +48,11 @@ class SimpleSwitch(app_manager.RyuApp):
         self.datapaths = {}
 
         self.path_info = []  # west, east, west/east port
-        self.path_info.append(["192.168.1.1", "192.168.3.1", 8])
-        self.path_info.append(["192.168.2.1", "192.168.4.1", 9])
+        # TODO: add LSP 1 and LSP 2
+        #self.path_info.append(["192.168.1.2", "192.168.1.1", 8])
+        #self.path_info.append(["192.168.2.2", "192.168.2.1", 9])
+        self.path_info.append(["192.168.3.2", "192.168.3.1", 1]) 
+        self.path_info.append(["192.168.4.2", "192.168.4.1", 3])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 1])
         self.path_info.append(["192.168.4.2", "192.168.4.1", 3])
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 2]
@@ -90,15 +93,23 @@ class SimpleSwitch(app_manager.RyuApp):
         if (81 in self.datapaths and 82 in self.datapaths):  # ready
             #for lsp_id in range(4):
             #    self.add_measure_rules(lsp_id)
-            self.add_measure_rules(2)
+            print "MainSwitch: I received datapath"
+            mLsp = 2
+            self.add_measure_rules(mLsp)
             print "preparing measurements"
-            self.measurement_process[2] = Process(target=monitor_process_callback,
-                                               args=(self.measure_info[2][1], 2))
-            self.measurement_process[2].start()
+            self.measurement_process[mLsp] = Process(target=monitor_process_callback,
+                                               args=(self.measure_info[mLsp][1],
+                                                     mLsp))
+            self.measurement_process[mLsp].start()
+            mLsp = 3
+            self.add_measure_rules(mLsp)
+            self.measurement_process[mLsp] = Process(target=monitor_process_callback,
+                                               args=(self.measure_info[mLsp][1],
+                                                     mLsp))
+            self.measurement_process[mLsp].start()
             print "measurements setup done"
 
             # start a process to measure
-
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -110,36 +121,46 @@ class SimpleSwitch(app_manager.RyuApp):
         eth = pkt.get_protocol(ethernet.ethernet)
         in_port = msg.in_port
 
+        return 
         if not eth:
-            return 
+            return
 
         # handle arp
         if eth.ethertype == ether_types.ETH_TYPE_ARP:
-            pkt_arp = pkt.get_protocol(arp.arp)
-            self._handle_arp(datapath, in_port, eth, pkt_arp)
+            print "Error; ARP received.... " + pkt.get_protocol(arp.arp)
+            # pkt_arp = pkt.get_protocol(arp.arp)
+            # self._handle_arp(datapath, in_port, eth, pkt_arp)
 
         # handle ip
         if eth.ethertype == ether_types.ETH_TYPE_IP:
-            return
-
             ip_pkt = pkt.get_protocol(ipv4.ipv4)
+
+            if not (81 in self.datapaths and 82 in self.datapaths):
+                print "ignore ... ovs not ready"
+                return
 
             # get healthest lsp
             if (ip_pkt.proto == 6):  # tcp
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
+                qos = check_registered_flow(6, tcp_pkt.src_port,
+                                            tcp_pkt.dst_port)
+                allocated_lsp = cal_healthest(qos)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
-                               cal_healthest())
+                               allocated_lsp)
 
             elif(ip_pkt.proto == 17):  # udp
                 udp_pkt = pkt.get_protocol(udp.udp)
+                qos = check_registered_flow(17, udp_pkt.src_port,
+                                            udp_pkt.dst_port)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
-                               cal_healthest())
+                               allocated_lsp)
 
-            else: # icmp
+            else: # icmp  
+                allocated_lsp = cal_healthest(0)
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
-                               self.db.get_healthest_lsp())
+                               allocated_lsp)
 
             self.packet_out(datapath, msg.data, msg.in_port,
                             self.vBundle_info[2])
@@ -167,37 +188,7 @@ class SimpleSwitch(app_manager.RyuApp):
                        orig_rule[3], new_lsp)
         del self.lsp_rules[cookie]
 
-    def _handle_arp(self, datapath, port, eth, pkt_arp):
-        ofproto = datapath.ofproto
-        parser = datapath.ofproto_parser
-
-        if pkt_arp.opcode != arp.ARP_REQUEST:
-            return
-        pkt = packet.Packet()
-
-        if pkt_arp.dst_ip in self.arptable:
-           fin_src_mac = self.arptable[pkt_arp.dst_ip]
-
-        pkt.add_protocol(ethernet.ethernet(ethertype=eth.ethertype, dst=eth.src,
-                                           src=fin_src_mac))
-        pkt.add_protocol(arp.arp(opcode=arp.ARP_REPLY,
-                                 src_mac=fin_src_mac, src_ip=pkt_arp.dst_ip,
-                                 dst_mac=eth.src, dst_ip=pkt_arp.src_ip))
-        pkt.serialize()
-        data = pkt.data
-        actions = [parser.OFPActionOutput(port=port)]
-        self.logger.info("packet out for arp reply %s" %(pkt,))
-
-        out = parser.OFPPacketOut( datapath=datapath,
-                                   buffer_id=ofproto.OFP_NO_BUFFER,
-                                   in_port = ofproto.OFPP_CONTROLLER,
-                                   actions=actions, data=data)
-        datapath.send_msg(out)
-
     def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0):
-        if not (81 in datapaths and 82 in datapaths):
-            print "ignore ... ovs not ready"
-            return
 
         if (sPort is None):
             cookie = random.randint(1,65535)
@@ -279,7 +270,7 @@ class SimpleSwitch(app_manager.RyuApp):
 
         print "flow ready"
 
-    def add_flow(self, datapath, match, actions, cookie=0, priority=100):
+    def add_flow(self, datapath, match, actions, cookie=0, idle_timeout=10, priority=100):
         ofproto = datapath.ofproto
         mod = datapath.ofproto_parser.OFPFlowMod(
             datapath=datapath, match=match,
@@ -382,3 +373,31 @@ class SimpleSwitch(app_manager.RyuApp):
             in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
 
+    """
+    def _handle_arp(self, datapath, port, eth, pkt_arp):
+        ofproto = datapath.ofproto
+        parser = datapath.ofproto_parser
+
+        if pkt_arp.opcode != arp.ARP_REQUEST:
+            return
+        pkt = packet.Packet()
+
+        if pkt_arp.dst_ip in self.arptable:
+           fin_src_mac = self.arptable[pkt_arp.dst_ip]
+
+        pkt.add_protocol(ethernet.ethernet(ethertype=eth.ethertype, dst=eth.src,
+                                           src=fin_src_mac))
+        pkt.add_protocol(arp.arp(opcode=arp.ARP_REPLY,
+                                 src_mac=fin_src_mac, src_ip=pkt_arp.dst_ip,
+                                 dst_mac=eth.src, dst_ip=pkt_arp.src_ip))
+        pkt.serialize()
+        data = pkt.data
+        actions = [parser.OFPActionOutput(port=port)]
+        self.logger.info("packet out for arp reply %s" %(pkt,))
+
+        out = parser.OFPPacketOut( datapath=datapath,
+                                   buffer_id=ofproto.OFP_NO_BUFFER,
+                                   in_port = ofproto.OFPP_CONTROLLER,
+                                   actions=actions, data=data)
+        datapath.send_msg(out)
+    """
