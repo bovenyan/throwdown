@@ -82,7 +82,7 @@ class db_api(object):
             print str(e)
             return None
 
-    def check_registered_flow(self, proto, src_port, dst_port):
+    def check_registered_flow(self, cookie, proto, src_port, dst_port):
         try:
             conn = self.conn()
             cur = conn.cursor()
@@ -93,10 +93,21 @@ class db_api(object):
                                              proto, src_port,
                                              dst_port))
             res = cur.fetchone()
-            cur.close()
 
-            if res is None:
+            if res is None:  # not found registered
+                # TODO add a new entry
                 res = 0
+                cur.execute("insert into (cookie, src_port, dst_port, }\
+                             values ()"
+            else:
+                # TODO update the existing entry
+                cur.execute("update set \
+                            cookie={}, ,\
+                            from {} \
+                            where src_port={}".format(cookie, self.tableflow,
+                                                      sPort)
+
+                pass
             return res
 
         except Exception, e:
