@@ -1,7 +1,7 @@
 ovs-vsctl add-br vBundle
 # data ports
-#ovs-vsctl add-port vBundle eth1
-#ovs-vsctl add-port vBundle eth2
+ovs-vsctl add-port vBundle eth1
+ovs-vsctl add-port vBundle eth2
 ovs-vsctl add-port vBundle eth3
 ovs-vsctl add-port vBundle eth4
 
@@ -33,7 +33,6 @@ ifconfig mEth4 192.168.9.2 netmask 255.255.255.0
 arp -s 192.168.9.1 00:00:00:00:00:92
 
 # set dpid to be first dataport
-# ovs-vsctl set bridge vBundle other_config:datapath-id=00:00:00:00:00:02
 ovs-vsctl set-controller vBundle tcp:127.0.0.1:6633
 # verify settings
 ovs-ofctl show vBundle

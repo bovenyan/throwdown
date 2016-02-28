@@ -55,19 +55,19 @@ class SimpleSwitch(app_manager.RyuApp):
 
         self.path_info = []  # west, east, west/east port
         # TODO: add LSP 1 and LSP 2
-        #self.path_info.append(["192.168.1.2", "192.168.1.1", 8])
-        #self.path_info.append(["192.168.2.2", "192.168.2.1", 9])
-        self.path_info.append(["192.168.3.2", "192.168.3.1", 1]) 
-        self.path_info.append(["192.168.4.2", "192.168.4.1", 2])
-        self.path_info.append(["192.168.3.2", "192.168.3.1", 1])
-        self.path_info.append(["192.168.4.2", "192.168.4.1", 2])
-        self.vBundle_info = ["192.168.5.2", "192.168.5.1", 2]
+        self.path_info.append(["192.168.1.2", "192.168.1.1", 1])
+        self.path_info.append(["192.168.2.2", "192.168.2.1", 2])
+        self.path_info.append(["192.168.3.2", "192.168.3.1", 3])
+        self.path_info.append(["192.168.4.2", "192.168.4.1", 4])
+        
+        self.vBundle_info = ["192.168.5.2", "192.168.5.1", 5]
 
         self.measure_info = []
-        self.measure_info.append(["192.168.6.2", "192.168.6.1", 4])
-        self.measure_info.append(["192.168.7.2", "192.168.7.1", 5])
-        self.measure_info.append(["192.168.8.2", "192.168.8.1", 6])
-        self.measure_info.append(["192.168.9.2", "192.168.9.1", 7])
+        self.measure_info.append(["192.168.6.2", "192.168.6.1", 6])
+        self.measure_info.append(["192.168.7.2", "192.168.7.1", 7])
+        self.measure_info.append(["192.168.8.2", "192.168.8.1", 8])
+        self.measure_info.append(["192.168.9.2", "192.168.9.1", 9])
+
 
         self.lsp_rules = []  # recording the associated flow for each lsp
         self.lsp_rules.append({})  # [cookie : [rule]]
