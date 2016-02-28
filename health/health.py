@@ -76,7 +76,7 @@ def cal_healthest(qos=0):
             score[lsp] = bw[lsp] * (1-trust_to_ping) + \
                          + (1-latency[lsp]) * trust_to_ping
 
-    if (qos ==3):  # aware of other flows
+    if (qos == 3):  # aware of other flows
         # TODO
         pass
 
