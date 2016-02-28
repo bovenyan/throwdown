@@ -5,15 +5,9 @@ from ryu.controller.handler import set_ev_cls
 from ryu.ofproto import ofproto_v1_3
 from ryu.lib.packet import packet
 from ryu.lib.packet import ethernet
-from ryu.lib.packet import arp
-from ryu.lib.packet import ipv4, tcp, udp, icmp
+from ryu.lib.packet import ipv4, tcp, udp
 from ryu.lib.packet import ether_types
-from multiprocessing import Process
 from ryu.app import event_message
-from time import sleep
-import random
-import copy
-
 from health.db_conn import db_api
 from health.pingMonitor import *
 from health.health import *
@@ -21,6 +15,7 @@ from health.health import *
 import netifaces as nif
 
 default_qos = 1
+
 
 class SimpleSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -55,7 +50,6 @@ class SimpleSwitch(app_manager.RyuApp):
         self.datapaths = [None, None]
 
         self.path_info = []  # west, east, west/east port
-        # TODO: add LSP 1 and LSP 2
         self.path_info.append(["192.168.1.2", "192.168.1.1", 1])
         self.path_info.append(["192.168.2.2", "192.168.2.1", 2])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 3])
@@ -69,17 +63,7 @@ class SimpleSwitch(app_manager.RyuApp):
         self.measure_info.append(["192.168.8.2", "192.168.8.1", 8])
         self.measure_info.append(["192.168.9.2", "192.168.9.1", 9])
 
-
-        #self.lsp_rules = []  # recording the associated flow for each lsp
-        #self.lsp_rules.append({})  # [cookie : [rule]]
-        #self.lsp_rules.append({})  # [cookie : [rule]]
-        #self.lsp_rules.append({})  # [cookie : [rule]]
-        #self.lsp_rules.append({})  # [cookie : [rule]]
-
         self.db = db_api()
-
-        # triggers event listener after 10 second
-        #self.measurement_process = [None, None, None, None]
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -107,10 +91,6 @@ class SimpleSwitch(app_manager.RyuApp):
             print "preparing measurements"
             for mLsp in range(4):
                 self.add_measure_rules(mLsp)
-                #self.measurement_process[mLsp] = Process(target=monitor_process_callback,
-                #                                         args=(self.measure_info[mLsp][1],
-                #                                               mLsp))
-                #self.measurement_process[mLsp].start()
 
             print "measurements setup done"
 
@@ -118,7 +98,6 @@ class SimpleSwitch(app_manager.RyuApp):
     def _packet_in_handler(self, ev):
         msg = ev.msg
         datapath = msg.datapath
-        ofproto = datapath.ofproto
 
         pkt = packet.Packet(msg.data)
         eth = pkt.get_protocol(ethernet.ethernet)
@@ -162,21 +141,20 @@ class SimpleSwitch(app_manager.RyuApp):
                                udp_pkt.src_port, udp_pkt.dst_port,
                                allocated_lsp)
 
-            else: # icmp
+            else:  # icmp is hard timed out after 15 seconds
+                # TODO warning, this will corrupt the end2end ping
                 allocated_lsp = cal_healthest(0)
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
-                               allocated_lsp)
+                               allocated_lsp, 20)
 
             self.packet_out(datapath, msg.data, in_port,
                             self.vBundle_info[2])
 
-    def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0):
-        if (sPort is None):
-            cookie = random.randint(1,65535)
+    def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0, hTime=0):
+        if (sPort is None):   # random for icmp packets
+            cookie = 10000
         else:
             cookie = sPort * 65536 + dPort
-
-        # self.lsp_rules[lsp_id][cookie] = [dpid, proto, sPort, dPort]
 
         if (dpid == self.datapaths[0].id):  # in from west
             # handle west
@@ -185,7 +163,7 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.path_info[lsp_id][1]
             self.create_nat(datapath, self.vBundle_info[2],
                             self.path_info[lsp_id][2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100)
+                            proto, cookie, sPort, dPort, 10, 100, hTime)
 
             # handle east
             datapath = self.datapaths[1]
@@ -193,7 +171,7 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.vBundle_info[1]
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100)
+                            proto, cookie, sPort, dPort, 10, 100, hTime)
 
         elif (dpid == self.datapaths[1].id):   # in from east
             # handle east
@@ -202,7 +180,7 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.path_info[lsp_id][0]
             self.create_nat(datapath, self.vBundle_info[2],
                             self.path_info[lsp_id][2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100)
+                            proto, cookie, sPort, dPort, 10, 100, hTime)
 
             # handle east
             datapath = self.datapaths[0]
@@ -210,18 +188,20 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.vBundle_info[0]
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100)
+                            proto, cookie, sPort, dPort, 10, 100, hTime)
 
         print "flow ready, selected lsp: " + str(lsp_id)
 
-    def add_flow(self, datapath, match, actions, cookie=0, idle_timeout=10, priority=100):
+    def add_flow(self, datapath, match, actions, cookie=0,
+                 idle_timeout=10, priority=100, hard_timeout=0):
         ofproto = datapath.ofproto
-        parser= datapath.ofproto_parser
+        parser = datapath.ofproto_parser
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
                                              actions)]
         mod = parser.OFPFlowMod(
             datapath=datapath, match=match,
-            command=ofproto.OFPFC_ADD, idle_timeout=idle_timeout, hard_timeout=0,
+            command=ofproto.OFPFC_ADD, idle_timeout=idle_timeout,
+            hard_timeout=hard_timeout,
             priority=priority, cookie=cookie, instructions=inst)
         datapath.send_msg(mod)
 
@@ -323,4 +303,3 @@ class SimpleSwitch(app_manager.RyuApp):
                    parser.OFPActionSetField(eth_dst=self.arptable[nat_dst]),
                    parser.OFPActionOutput(out_port)]
         self.add_flow(datapath, match, actions, cookie, time_out, priority)
-
