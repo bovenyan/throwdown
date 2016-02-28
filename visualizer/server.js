@@ -329,7 +329,7 @@ io.sockets.on('connection',
 		});
 
 		socket.on('mysql_lsps', function() {
-				mysqlClient.query('select * from lsp', function (err, results, fields) {
+			mysqlClient.query('select * from lsp', function (err, results, fields) {
 				if (err) return console.log(err);
 
 				// console.log(JSON.stringify(results));
@@ -347,6 +347,20 @@ io.sockets.on('connection',
 				socket.emit('mysql_lsps_answer', interfaces);
 				console.log('LSP information in MySQL sent to client');
 			});
+		});
+
+		socket.on('get_wget_stat', function() {
+			mysqlClient.query('select * from wget_stats', function (err, results, fields) {
+				if (err) return console.log(err);
+
+				var data = JSON.parse(JSON.stringify(results));
+				socket.emit('wget_stat', data);
+				console.log('wget statistics sent to client');
+			});
+		});
+
+		socket.on('run_wget', function() {
+			
 		});
 
 		// listen to disconnet information

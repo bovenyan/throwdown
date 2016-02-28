@@ -341,7 +341,10 @@ var apps = function (p) {
 				// console.log(color);
 				// p.fill('rgba('+(255-255*flows[i].bandwidth/1000)+','+(255*flows[i].bandwidth/1000)+',0,0.5)');
 				// p.fill(0);
+				// var c = 'rgba('+((255-255*flows[i].bandwidth/1000)*0.5)+','+(255*flows[i].bandwidth/1000*0.5)+',0,0.5)';
+				// console.log(c);
 				p.fill((255-255*flows[i].bandwidth/1000)*0.5, 255*flows[i].bandwidth/1000*0.5, 0);
+				// p.fill(c);
 			}
 			p.stroke(0);
 			p.strokeWeight(1);
