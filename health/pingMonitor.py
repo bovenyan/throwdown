@@ -58,7 +58,7 @@ class icmp_monitor():
                     else:
                         self.loss_rate = float(self.packet_loss)/(self.packet_recv + self.packet_loss)
 
-                    print "loss: " + str(self.loss_rate)
+                    #print "loss: " + str(self.loss_rate)
 
             if "time" in icmp_ele[6]:
                 latency = float(icmp_ele[6].split("=")[1])
@@ -73,7 +73,7 @@ class icmp_monitor():
                     else:
                         self.latency = 10000
                     
-                    print "avg latency: " + str(self.latency)
+                    #print "avg latency: " + str(self.latency)
                     # TODO: database
                     db.update_health(self.lsp, self.latency, self.loss_rate)
                     self.reachable_msg = 0
@@ -84,7 +84,7 @@ class icmp_monitor():
             self.reachability_count_down = self.reachability_count_down - 1
 
             if (self.reachability_count_down == 0):
-                print "not reachable"
+                #print "not reachable"
                 self.latency = 20000
                 self.loss_rate = 100
                 # TODO update database

@@ -100,21 +100,14 @@ class SimpleSwitch(app_manager.RyuApp):
         print "default ready"
 
         if not (None in self.datapaths):  # ready
-            #for lsp_id in range(4):
-            #    self.add_measure_rules(lsp_id)
-            mLsp = 2
-            self.add_measure_rules(mLsp)
             print "preparing measurements"
-            self.measurement_process[mLsp] = Process(target=monitor_process_callback,
-                                               args=(self.measure_info[mLsp][1],
-                                                     mLsp))
-            self.measurement_process[mLsp].start()
-            mLsp = 3
-            self.add_measure_rules(mLsp)
-            self.measurement_process[mLsp] = Process(target=monitor_process_callback,
-                                               args=(self.measure_info[mLsp][1],
-                                                     mLsp))
-            self.measurement_process[mLsp].start()
+            for mLsp in range(4):
+                self.add_measure_rules(mLsp)
+                self.measurement_process[mLsp] = Process(target=monitor_process_callback,
+                                                         args=(self.measure_info[mLsp][1],
+                                                               mLsp))
+                self.measurement_process[mLsp].start()
+
             print "measurements setup done"
 
             # start a process to measure
