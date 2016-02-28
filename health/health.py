@@ -72,6 +72,11 @@ def cal_healthest(qos=0):
     if (qos == 2):  # greedy but with trust of Bw
         # TODO fix current time
         trust_to_ping = (datetime.now() - last_update).second/30
+        if trust_to_ping < 0:
+            trust_to_ping = 0
+        if trust_to_ping > 1:
+            trust_to_ping = 1
+
         for lsp in range(4):
             score[lsp] = bw[lsp] * (1-trust_to_ping) + \
                          + (1-latency[lsp]) * trust_to_ping

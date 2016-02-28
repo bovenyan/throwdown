@@ -20,6 +20,7 @@ from health.health import *
 
 import netifaces as nif
 
+default_qos = 1
 
 class SimpleSwitch(app_manager.RyuApp):
     OFP_VERSIONS = [ofproto_v1_3.OFP_VERSION]
@@ -69,16 +70,16 @@ class SimpleSwitch(app_manager.RyuApp):
         self.measure_info.append(["192.168.9.2", "192.168.9.1", 9])
 
 
-        self.lsp_rules = []  # recording the associated flow for each lsp
-        self.lsp_rules.append({})  # [cookie : [rule]]
-        self.lsp_rules.append({})  # [cookie : [rule]]
-        self.lsp_rules.append({})  # [cookie : [rule]]
-        self.lsp_rules.append({})  # [cookie : [rule]]
+        #self.lsp_rules = []  # recording the associated flow for each lsp
+        #self.lsp_rules.append({})  # [cookie : [rule]]
+        #self.lsp_rules.append({})  # [cookie : [rule]]
+        #self.lsp_rules.append({})  # [cookie : [rule]]
+        #self.lsp_rules.append({})  # [cookie : [rule]]
 
         self.db = db_api()
 
         # triggers event listener after 10 second
-        self.measurement_process = [None, None, None, None]
+        #self.measurement_process = [None, None, None, None]
 
     @set_ev_cls(ofp_event.EventOFPSwitchFeatures, CONFIG_DISPATCHER)
     def switch_features_handler(self, ev):
@@ -94,28 +95,24 @@ class SimpleSwitch(app_manager.RyuApp):
                                           ofproto.OFPCML_NO_BUFFER)]
         self.add_flow(datapath, match, actions, 0, 0, 0)
 
-        print dpid
         if dpid == self.west_dpid:    # record datapath
             self.datapaths[0] = datapath
         else:
             self.datapaths[1] = datapath
 
-        print "default ready"
+        print "default ready + " + str(dpid)
 
         if not (None in self.datapaths):  # ready
             self.add_block_public()
-            """
             print "preparing measurements"
             for mLsp in range(4):
                 self.add_measure_rules(mLsp)
-                self.measurement_process[mLsp] = Process(target=monitor_process_callback,
-                                                         args=(self.measure_info[mLsp][1],
-                                                               mLsp))
-                self.measurement_process[mLsp].start()
+                #self.measurement_process[mLsp] = Process(target=monitor_process_callback,
+                #                                         args=(self.measure_info[mLsp][1],
+                #                                               mLsp))
+                #self.measurement_process[mLsp].start()
 
             print "measurements setup done"
-
-            """
 
     @set_ev_cls(ofp_event.EventOFPPacketIn, MAIN_DISPATCHER)
     def _packet_in_handler(self, ev):
@@ -138,18 +135,22 @@ class SimpleSwitch(app_manager.RyuApp):
                 print "ignore ... ovs not ready"
                 return
 
-
             # get healthest lsp
             if (ip_pkt.proto == 6):  # tcp
                 print "received IP packet"
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
-                qos = db.check_registered_flow(6, tcp_pkt.src_port,
-                                               tcp_pkt.dst_port)
-                qos=1
+                # TODO: import qos 
+                #qos = db.check_registered_qos(6, tcp_pkt.src_port,
+                #                                 tcp_pkt.dst_port)
+                #if qos is None:
+                #    qos = default_qos
+                qos = 1
                 allocated_lsp = cal_healthest(qos)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
                                allocated_lsp)
+                # commit_flow
+                # ... .
 
             elif(ip_pkt.proto == 17):  # udp
                 udp_pkt = pkt.get_protocol(udp.udp)
@@ -174,7 +175,7 @@ class SimpleSwitch(app_manager.RyuApp):
         else:
             cookie = sPort * 65536 + dPort
         
-        self.lsp_rules[lsp_id][cookie] = [dpid, proto, sPort, dPort]
+        # self.lsp_rules[lsp_id][cookie] = [dpid, proto, sPort, dPort]
 
         if (dpid == self.datapaths[0].id):  # in from west
             # handle west
@@ -315,8 +316,6 @@ class SimpleSwitch(app_manager.RyuApp):
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
                                     ip_proto=proto, tcp_src=sPort,
                                     tcp_dst=dPort, in_port=in_port)
-        print match
-
         actions = [parser.OFPActionSetField(ipv4_src=nat_src),
                    parser.OFPActionSetField(eth_src=self.arptable[nat_src]),
                    parser.OFPActionSetField(ipv4_dst=nat_dst),

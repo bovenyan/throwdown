@@ -1,4 +1,5 @@
 import MySQLdb
+import datetime
 
 class db_api(object):
     def __init__(self):
@@ -82,7 +83,7 @@ class db_api(object):
             print str(e)
             return None
 
-    def check_registered_flow(self, cookie, proto, src_port, dst_port):
+    def check_registered_qos(self, proto, src_port, dst_port):
         try:
             conn = self.conn()
             cur = conn.cursor()
@@ -93,26 +94,46 @@ class db_api(object):
                                              proto, src_port,
                                              dst_port))
             res = cur.fetchone()
-
-            if res is None:  # not found registered
-                # TODO add a new entry
-                res = 0
-                cur.execute("insert into (cookie, src_port, dst_port, }\
-                             values ()"
+            
+            if res is None:
+                return None
             else:
-                # TODO update the existing entry
-                cur.execute("update set \
-                            cookie={}, ,\
-                            from {} \
-                            where src_port={}".format(cookie, self.tableflow,
-                                                      sPort)
-
-                pass
-            return res
+                return int(res)
 
         except Exception, e:
             print str(e)
             return None
+
+    def commit_flow(self, found, cookie, lsp, src_port,
+                      dst_port, qos_type, app_id=100):
+        try:
+            if found:
+                conn = self.conn()
+                cur = conn.cursor()
+                cur.execute("update {} \
+                             set cookie={}, born={},  \
+                             where src_port={} and \
+                             dst_port={}".format(self.tableflow, cookie,
+                                                 datatime.now(), sPort, dPort))
+                conn.commit()
+                conn.close()
+                return True
+
+            else:
+                conn = self.conn()
+                cur = conn.cursor()
+                cur.execute("insert into (cookie, protocol, \
+                             src_port, dst_port, born, app_id)\
+                             values ({}, {}, {}, {}, {}, \
+                             {})".format(self.cookie, proto, src_port,
+                                         dst_port, datatime.now(), app_id))
+                conn.commit()
+                conn.close()
+                return True
+
+        except Exception, e:
+            print str(e)
+            return False
 
     def update_health(self, lsp, latency, loss):
         try:
