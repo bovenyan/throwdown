@@ -100,7 +100,7 @@ class icmp_monitor():
 
 def monitor_process_callback(ip, lsp):
     sleep(10)
-    print "end to end monitoring start on lsp: " + str(lsp)
+    print "end to end monitoring start on lsp: " + str(lsp) + " ip: " + ip
     monitor = icmp_monitor(ip, lsp)
     monitor.start()
 

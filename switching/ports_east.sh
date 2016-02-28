@@ -33,7 +33,7 @@ ifconfig mEth4 192.168.9.1 netmask 255.255.255.0
 arp -s 192.168.9.2 00:00:00:00:00:91
 
 # set dpid to be first dataport
-ovs-vsctl set bridge vBundle other_config:datapath-id=00:00:00:00:00:02
+# ovs-vsctl set bridge vBundle other_config:datapath-id=00:00:00:00:00:02
 
 # verify settings
 ovs-ofctl show vBundle
