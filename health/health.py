@@ -1,5 +1,7 @@
 from db_conn import db_api
 import random
+import time
+from datetime import datetime, timedelta
 db = db_api()
 
 def fetch_metrix():
@@ -15,11 +17,14 @@ def fetch_metrix():
 
     for lsp in range(4):
         metrix[lsp] = list(db.get_lsp_metrix(lsp))
+
         if (metrix[lsp][2] > max_bw):
             max_bw = metrix[lsp][2]
         if (metrix[lsp][0] > max_latency):
             max_latency = metrix[lsp][0]
         loss_norm[lsp] = metrix[lsp][1]
+
+    last_update = metrix[0][5]
 
     for lsp in range(4):
         metrix_rev = db.get_lsp_metrix(lsp+4)
@@ -33,16 +38,16 @@ def fetch_metrix():
         bw_norm[lsp] = metrix[lsp][2]/max_bw
         latency_norm[lsp] = metrix[lsp][0]/max_latency
 
-    return bw_norm, latency_norm, loss_norm
+    return bw_norm, latency_norm, loss_norm, last_update
 
 def cal_healthest(qos=0):
-    bw, latency, loss = fetch_metrix()
+    bw, latency, loss, last_update = fetch_metrix()
 
     score = [0.0, 0.0, 0.0, 0.0]
     highest_score = 0.0
     winner = 1
 
-    if (qos == 0):  # greedy 
+    if (qos == 0):  # greedy
         for lsp in range(4):
             score[lsp] = bw[lsp] + (1-latency[lsp]) + (1-loss[lsp])
             if (score[lsp] > highest_score):
@@ -51,7 +56,7 @@ def cal_healthest(qos=0):
 
         return winner
 
-    if (qos == 1):  # proportionaly  
+    if (qos == 1):  # proportionaly
         sum_bw = sum(bw)
         for lsp in range(4):
             bw[lsp] = bw[lsp]/sum_bw
@@ -62,16 +67,18 @@ def cal_healthest(qos=0):
             bw[lsp+1] = bw[lsp] + bw[lsp+1]
             if randf >= bw[lsp] and randf < bw[lsp+1]:
                 return lsp
-        
         return random.randint(0,3)
 
-    if (qos == 2):  # udp
+    if (qos == 2):  # greedy but with trust of Bw
+        # TODO fix current time
+        trust_to_ping = (datetime.now() - last_update).second/30
         for lsp in range(4):
-            score[lsp] = bw[lsp] + (1-latency[lsp])
-            if (score[lsp] > highest_score):
-                winner = lsp
-                highest_score = score[lsp]
-        return winner 
+            score[lsp] = bw[lsp] * (1-trust_to_ping) + \
+                         + (1-latency[lsp]) * trust_to_ping
+
+    if (qos ==3):  # aware of other flows
+        # TODO
+        pass
 
 if __name__ == "__main__":
     print cal_healthest(0)

@@ -53,7 +53,7 @@ class db_api(object):
 
             cur.execute("select latency,\
                          loss_rate, bandwidth,\
-                         utility, flow_no\
+                         utility, flow_no, last_redis_update\
                          from {} \
                          where id={}".format(self.tablelsp,
                                              lsp+1))
@@ -86,7 +86,7 @@ class db_api(object):
         try:
             conn = self.conn()
             cur = conn.cursor()
-            
+
             cur.execute("select qos_type from {} \
                          where protocol={} and src_port={} and \
                          dst_port={}".format(self.tableflow,
@@ -94,7 +94,7 @@ class db_api(object):
                                              dst_port))
             res = cur.fetchone()
             cur.close()
-            
+
             if res is None:
                 res = 0
             return res
@@ -102,7 +102,6 @@ class db_api(object):
         except Exception, e:
             print str(e)
             return None
-
 
     def update_health(self, lsp, latency, loss):
         try:
