@@ -60,7 +60,7 @@ class SimpleSwitch(app_manager.RyuApp):
         self.path_info.append(["192.168.2.2", "192.168.2.1", 2])
         self.path_info.append(["192.168.3.2", "192.168.3.1", 3])
         self.path_info.append(["192.168.4.2", "192.168.4.1", 4])
-        
+
         self.vBundle_info = ["192.168.5.2", "192.168.5.1", 5]
 
         self.measure_info = []
@@ -130,7 +130,7 @@ class SimpleSwitch(app_manager.RyuApp):
         # handle ip
         if eth.ethertype == ether_types.ETH_TYPE_IP:
             ip_pkt = pkt.get_protocol(ipv4.ipv4)
-            
+
             if (None in self.datapaths):
                 print "ignore ... ovs not ready"
                 return
@@ -139,7 +139,7 @@ class SimpleSwitch(app_manager.RyuApp):
             if (ip_pkt.proto == 6):  # tcp
                 print "received IP packet"
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
-                # TODO: import qos 
+                # TODO: import qos
                 #qos = db.check_registered_qos(6, tcp_pkt.src_port,
                 #                                 tcp_pkt.dst_port)
                 #if qos is None:
@@ -161,7 +161,7 @@ class SimpleSwitch(app_manager.RyuApp):
                                udp_pkt.src_port, udp_pkt.dst_port,
                                allocated_lsp)
 
-            else: # icmp  
+            else: # icmp
                 allocated_lsp = cal_healthest(0)
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
                                allocated_lsp)
@@ -174,7 +174,7 @@ class SimpleSwitch(app_manager.RyuApp):
             cookie = random.randint(1,65535)
         else:
             cookie = sPort * 65536 + dPort
-        
+
         # self.lsp_rules[lsp_id][cookie] = [dpid, proto, sPort, dPort]
 
         if (dpid == self.datapaths[0].id):  # in from west
