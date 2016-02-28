@@ -154,8 +154,9 @@ class SimpleSwitch(app_manager.RyuApp):
 
             elif(ip_pkt.proto == 17):  # udp
                 udp_pkt = pkt.get_protocol(udp.udp)
-                qos = db.check_registered_flow(17, udp_pkt.src_port,
-                                               udp_pkt.dst_port)
+                # qos = db.check_registered_flow(17, udp_pkt.src_port,
+                #                               udp_pkt.dst_port)
+                qos = 1
                 allocated_lsp = cal_healthest(qos)
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
