@@ -9,7 +9,8 @@ class db_api(object):
         self.user = "root"
         self.passwd = ""
         self.dbname = "myboly"
-        self.tablename = "trial"   # modify to health later
+        self.tablelsp = "lsp"   # modify to health later
+        self.tableflow = "flow"   # modify to health later
         self.port = 3306
         self.charset ="utf8"
 
@@ -36,15 +37,88 @@ class db_api(object):
             conn = self.conn()
             cur = conn.cursor()
 
-            cur.execute("select lsp from {}".format(self.tablename))
-            res = int(cur.fetchone()[0])
+            #cur.execute("select lsp from {}".format(self.tablelsp))
+            #res = int(cur.fetchone()[0])
+            # TODO work on the lsp healthest selection
 
-            return res
+            return 2
         except Exception, e:
             print str(e)
             return -1
 
+    def get_lsp_metrix(self, lsp):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("select latency,\
+                         loss_rate, bandwidth,\
+                         utility, flow_no\
+                         from {} \
+                         where id={}".format(self.tablelsp,
+                                             lsp+1))
+            res=cur.fetchone()
+            cur.close()
+            return res
+        except Exception, e:
+            print str(e)
+            return None
+
+    def register_flow(self, proto, src_port, dst_port, qos, app_id):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("insert into {} (protocol, src_port, \
+                          dst_port, qos_type, app_id)\
+                          values ({}, {}, {}, {}, {})".format(self.tableflow,
+                                                              proto, src_port,
+                                                              dst_port, qos, 
+                                                              ))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception, e:
+            print str(e)
+            return None
+
+    def check_registered_flow(self, proto, src_port, dst_port):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+            
+            cur.execute("select qos_type \
+                         where proto={}, src_port={}, \
+                         dst_port={}".format(self.tableflow,
+                                             proto, src_port,
+                                             dst_port))
+            res = cur.fetchone()
+            cur.close()
+            return res
+
+        except Exception, e:
+            print str(e)
+            return None
+
+    def update_health(self, lsp, latency, loss):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("update {} \
+                         set latency={},\
+                         loss_rate={}\
+                         where id={} or id={}".format(self.tablelsp,
+                                                      latency, loss,
+                                                      lsp+1, lsp+5))
+            conn.commit()
+            conn.close()
+            return True
+        except Exception, e:
+            print str(e)
+            return False
 
 if __name__ == "__main__":
     cc = db_api()
-    print cc.get_healthest_lsp() 
+    print cc.update_health(2, 200, 55.0)
+    print check_registered_flow(6, 80, 1000)
