@@ -105,31 +105,18 @@ class db_api(object):
             return None
 
     def commit_flow(self, found, cookie, lsp, src_port,
-                      dst_port, qos_type, app_id=100):
+                      dst_port, qos_type, app_id=0):
         try:
-            if found:
-                conn = self.conn()
-                cur = conn.cursor()
-                cur.execute("update {} \
-                             set cookie={}, born={},  \
-                             where src_port={} and \
-                             dst_port={}".format(self.tableflow, cookie,
-                                                 datatime.now(), sPort, dPort))
-                conn.commit()
-                conn.close()
-                return True
-
-            else:
-                conn = self.conn()
-                cur = conn.cursor()
-                cur.execute("insert into (cookie, protocol, \
-                             src_port, dst_port, born, app_id)\
-                             values ({}, {}, {}, {}, {}, \
-                             {})".format(self.cookie, proto, src_port,
-                                         dst_port, datatime.now(), app_id))
-                conn.commit()
-                conn.close()
-                return True
+            conn = self.conn()
+            cur = conn.cursor()
+            cur.execute("insert into (cookie, protocol, \
+                         src_port, dst_port, lsp, app_id)\
+                         values ({}, {}, {}, {}, {}, \
+                         {})".format(self.cookie, proto, src_port,
+                                     dst_port, lsp, app_id))
+            conn.commit()
+            conn.close()
+            return True
 
         except Exception, e:
             print str(e)
