@@ -156,6 +156,7 @@ class SimpleSwitch(app_manager.RyuApp):
                                 self.vBundle_info[2])
 
             else:   # icmp will be scheduled greedily (hard timeout 20)
+                qos = 0
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
                                qos, 0, 20)
                 self.packet_out(datapath, msg.data, in_port,
@@ -169,9 +170,9 @@ class SimpleSwitch(app_manager.RyuApp):
             cookie = random.randint(1,65535)
         else:
             cookie = sPort * 65536 + dPort
-            db.commit_flow(cookie, lsp_id, sPort, dPort, qos, app_id) 
         
         if (dpid == self.datapaths[0].id):  # in from west
+            db.commit_flow(cookie, lsp_id, proto, sPort, dPort, qos, app_id)
             # handle west
             datapath = self.datapaths[0]
             nat_src = self.path_info[lsp_id][0]
@@ -187,8 +188,10 @@ class SimpleSwitch(app_manager.RyuApp):
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
                             proto, cookie, sPort, dPort, 10, 100, h_timeout)
+            print "West -> East: flow ready, selected lsp: " + str(lsp_id)
 
         elif (dpid == self.datapaths[1].id):   # in from east
+            db.commit_flow(cookie, lsp_id+4, proto, sPort, dPort, qos, app_id)
             # handle east
             datapath = self.datapaths[1]
             nat_src = self.path_info[lsp_id][1]
@@ -204,8 +207,8 @@ class SimpleSwitch(app_manager.RyuApp):
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
                             proto, cookie, sPort, dPort, 10, 100, h_timeout)
+            print "East -> West: flow ready, selected lsp: " + str(lsp_id)
 
-        print "flow ready, selected lsp: " + str(lsp_id)
 
     def add_flow(self, datapath, match, actions, cookie=0, idle_timeout=10,
                  priority=100, hard_timeout=0):
@@ -303,7 +306,8 @@ class SimpleSwitch(app_manager.RyuApp):
 
 
     def create_nat(self, datapath, in_port, out_port, nat_src, nat_dst, proto,
-                   cookie, sPort=None, dPort=None, time_out=0, priority=100):
+                   cookie, sPort=None, dPort=None, timeout=0, priority=100,
+                   h_timeout=0):
         parser = datapath.ofproto_parser
         match = None
         if (sPort is None and dPort is None):
@@ -324,4 +328,13 @@ class SimpleSwitch(app_manager.RyuApp):
                    parser.OFPActionSetField(ipv4_dst=nat_dst),
                    parser.OFPActionSetField(eth_dst=self.arptable[nat_dst]),
                    parser.OFPActionOutput(out_port)]
-        self.add_flow(datapath, match, actions, cookie, time_out, priority)
+
+        ofproto = datapath.ofproto
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                             actions)]
+        mod = parser.OFPFlowMod(
+            datapath=datapath, match=match,
+            command=ofproto.OFPFC_ADD, idle_timeout=timeout,
+            hard_timeout=h_timeout, priority=priority,
+            cookie=cookie, instructions=inst)
+        datapath.send_msg(mod)

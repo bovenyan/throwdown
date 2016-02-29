@@ -104,18 +104,20 @@ class db_api(object):
             print str(e)
             return None
 
-    def commit_flow(self, cookie, lsp, src_port,
-                      dst_port, qos_type, app_id=0):
+    def commit_flow(self, cookie, lsp, proto, src_port, dst_port,
+                    qos_type, app_id=0):
         try:
+            print "dB Lsp " + str(lsp)
             conn = self.conn()
             cur = conn.cursor()
-            cur.execute("insert into (cookie, protocol, \
+            cur.execute("insert into {} (cookie, protocol, \
                          src_port, dst_port, lsp, qos_type, app_id)\
                          values ({}, {}, {}, {}, {}, {}, \
-                         {} on duplicate key update lsp={}, qos_type={},\
-                         app_id={})".format(self.cookie, proto, src_port,
-                                            dst_port, lsp, qos_type, app_id,
-                                            lsp, qos_type, app_id))
+                         {}) on duplicate key update lsp={}, qos_type={},\
+                         app_id={}".format(self.tableflow, cookie, proto,
+                                            src_port, dst_port, lsp+1,
+                                            qos_type, app_id,
+                                            lsp+1, qos_type, app_id))
             conn.commit()
             conn.close()
             return True
@@ -124,16 +126,22 @@ class db_api(object):
             print str(e)
             return False
 
-    def unavailable_lsps(self, app_id):
+    def unavailable_lsps(self, app_id, reverse):
         try:
             conn = self.conn()
             cur = conn.cursor()
-            cur.execute("select lsp from {} where \
-                        app_id={}".format(self.tableflow,
-                                          app_id))
+            if reverse:
+                cur.execute("select lsp-4 from {} where \
+                            app_id={} and lsp > 4".format(self.tableflow,
+                                                          app_id))
+            else:
+                cur.execute("select lsp from {} where \
+                            app_id={} and lsp < 5".format(self.tableflow,
+                                                          app_id))
             res=cur.fetchall()
+            res_parsed = []
             for i in range(len(res)):
-                res[i] = int(res[i])
+                res_parsed.append(res[i][0])
             return res
         except Exception, e:
             print str(e)

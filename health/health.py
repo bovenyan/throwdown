@@ -40,7 +40,7 @@ def fetch_metrix():
 
     return bw_norm, latency_norm, loss_norm, last_update
 
-def cal_healthest(qos=0):
+def cal_healthest(qos=0, eastOriented=False):
     bw, latency, loss, last_update = fetch_metrix()
 
     score = [0.0, 0.0, 0.0, 0.0]
@@ -81,8 +81,8 @@ def cal_healthest(qos=0):
                          + (1-latency[lsp]) * trust_to_ping
 
     if (qos == 3):  # proportionaly but aware of other flows
-        nouse = set(unavailable_lsps(2))
-        nouse = list(nouse).sort()
+        nouse = list(set(db.unavailable_lsps(2, eastOriented)))
+        nouse.sort()
 
         use = []
 
