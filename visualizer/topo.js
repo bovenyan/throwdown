@@ -29,6 +29,8 @@ var topo = function (p) {
 
 	// array of buttons
 	var buttons = [];
+	var west_2_east = [];
+	var east_2_west = [];
 
 	// mouse press event handler
 	function onMousePressed() {
@@ -37,6 +39,34 @@ var topo = function (p) {
 				if (buttons[i].show) {
 					buttons[i].show = false;
 				} else {
+					buttons[i].show = true;
+				}
+			}
+		}
+
+		if (p.mouseX > east_2_west.l && p.mouseX < east_2_west.r && p.mouseY > east_2_west.u && p.mouseY < east_2_west.b) {
+			if (east_2_west.show) {
+				east_2_west.show = false;
+				for (var i = 0; i < 4; i++) {
+					buttons[i].show = false;
+				}
+			} else {
+				east_2_west.show = true;
+				for (var i = 0; i < 4; i++) {
+					buttons[i].show = true;
+				}
+			}
+		}
+
+		if (p.mouseX > west_2_east.l && p.mouseX < west_2_east.r && p.mouseY > west_2_east.u && p.mouseY < west_2_east.b) {
+			if (west_2_east.show) {
+				west_2_east.show = false;
+				for (var i = 4; i < 8; i++) {
+					buttons[i].show = false;
+				}
+			} else {
+				west_2_east.show = true;
+				for (var i = 4; i < 8; i++) {
 					buttons[i].show = true;
 				}
 			}
@@ -97,6 +127,22 @@ var topo = function (p) {
 				show: false
 			}
 			buttons.push(button);
+		}
+
+		east_2_west = {
+			l: width*0.82,
+			r: width*0.82+width*0.07,
+			u: height*0.1,
+			b: height*0.2,
+			show: false
+		}
+
+		west_2_east = {
+			l: width*0.91,
+			r: width*0.91+width*0.07,
+			u: height*0.1,
+			b: height*0.2,
+			show: false
 		}
 
 		// Establish socket between browser and server
@@ -228,5 +274,23 @@ var topo = function (p) {
 				p.text(lsps[i].name, width*0.91, height*0.3+height*0.2*(i-4), w, h);
 			}
 		}
+
+		p.stroke(0);
+		p.strokeWeight(1);
+		p.fill(255);
+		p.rect(east_2_west.l, east_2_west.u, east_2_west.r-east_2_west.l, east_2_west.b-east_2_west.u);
+		p.noStroke();
+		p.strokeWeight(2);
+		p.fill(0);
+		p.text("East to West", east_2_west.l, east_2_west.u, east_2_west.r-east_2_west.l, east_2_west.b-east_2_west.u);
+
+		p.stroke(0);
+		p.strokeWeight(1);
+		p.fill(255);
+		p.rect(west_2_east.l, west_2_east.u, west_2_east.r-west_2_east.l, west_2_east.b-west_2_east.u);
+		p.noStroke();
+		p.strokeWeight(2);
+		p.fill(0);
+		p.text("West to East", west_2_east.l, west_2_east.u, west_2_east.r-west_2_east.l, west_2_east.b-west_2_east.u);
 	}
 }

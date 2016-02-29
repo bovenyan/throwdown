@@ -105,6 +105,13 @@ io.sockets.on('connection',
 			password: '',
 			database: 'myboly'
 		});
+		var mysqlClient2 = mysql.createConnection({
+			host: 'localhost',
+			port: 9001,
+			user: 'root',
+			password: '',
+			database: 'myboly'
+		});
 
 		function findNode(ip) {
 			for (var i = 0; i < nodes.length; i++) {
@@ -353,9 +360,16 @@ io.sockets.on('connection',
 			mysqlClient.query('select * from wget_stats', function (err, results, fields) {
 				if (err) return console.log(err);
 
-				var data = JSON.parse(JSON.stringify(results));
-				socket.emit('wget_stat', data);
-				console.log('wget statistics sent to client');
+				var data1 = JSON.parse(JSON.stringify(results));
+				// socket.emit('wget_stat', data);
+				// console.log('wget statistics sent to client');
+				mysqlClient2.query('select * from wget_stats', function (err, results, fields) {
+					var data2 = JSON.parse(JSON.stringify(results));
+
+					data1 = data1.concat(data2);
+					socket.emit('wget_stat', data1);
+					console.log('wget statistics sent to client.');
+				});
 			});
 		});
 

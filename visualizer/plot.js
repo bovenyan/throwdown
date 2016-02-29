@@ -125,7 +125,7 @@ var plot = function (p) {
 		p.fill(255, 0, 0);
 		p.stroke(255, 0, 0);
 		p.strokeWeight(1);
-		p.text("bandwidth: " + lsps[index].bandwidth + " Bbps", plots[index].w*0.8, plots[index].h-plots[index].h*plots[index].bw[9]);
+		p.text("bandwidth: " + lsps[index].bandwidth + " Mbps", plots[index].w*0.8, plots[index].h-plots[index].h*plots[index].bw[9]);
 
 		// printing loss rate
 		p.textSize(20);
