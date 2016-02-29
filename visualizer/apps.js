@@ -10,7 +10,6 @@ var apps = function (p) {
 	var apps = [];
 
 	var appNames = [
-	'iperf',
 	'wget',
 	'video'
 	];
@@ -119,7 +118,7 @@ var apps = function (p) {
 			buttons.push(button);
 		}
 
-		for (var i = 0; i < 4; i++) {
+		for (var i = 0; i < 2; i++) {
 			var mApp = {
 				lsps: [],
 				show: false,
@@ -189,9 +188,9 @@ var apps = function (p) {
 
 			for (var i = 0; i < data.length; i++) {
 				if (data[i].lsp < 5) {
-					apps[data[i].app_id].lsps.push(data[i].lsp+3);
+					apps[data[i].app_id-1].lsps.push(data[i].lsp+3);
 				} else {
-					apps[data[i].app_id].lsps.push(data[i].lsp-5);
+					apps[data[i].app_id-1].lsps.push(data[i].lsp-5);
 				}
 			}
 
@@ -441,7 +440,7 @@ var apps = function (p) {
 			} else {
 				p.fill(255);
 			}
-			p.text("APP", apps[i].l+20, apps[i].b-20);
+			p.text(appNames[i], apps[i].l+20, apps[i].b-20);
 
 			if (apps[i].show) {
 				for (var j = 0; j < apps[i].lsps.length; j++) {
