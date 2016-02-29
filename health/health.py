@@ -40,7 +40,7 @@ def fetch_metrix():
 
     return bw_norm, latency_norm, loss_norm, last_update
 
-def cal_healthest(qos=0):
+def cal_healthest(qos=0, eastOriented=False):
     bw, latency, loss, last_update = fetch_metrix()
 
     score = [0.0, 0.0, 0.0, 0.0]
@@ -62,7 +62,7 @@ def cal_healthest(qos=0):
             bw[lsp] = bw[lsp]/sum_bw
         bw = [0] + bw
         randf = random.random()
-        print bw, randf
+        # print bw, randf
         for lsp in range(4):
             bw[lsp+1] = bw[lsp] + bw[lsp+1]
             if randf >= bw[lsp] and randf < bw[lsp+1]:
@@ -70,7 +70,6 @@ def cal_healthest(qos=0):
         return random.randint(0,3)
 
     if (qos == 2):  # greedy but with trust of Bw
-        # TODO fix current time
         trust_to_ping = (datetime.now() - last_update).second/30
         if trust_to_ping < 0:
             trust_to_ping = 0
@@ -81,9 +80,29 @@ def cal_healthest(qos=0):
             score[lsp] = bw[lsp] * (1-trust_to_ping) + \
                          + (1-latency[lsp]) * trust_to_ping
 
-    if (qos == 3):  # aware of other flows
-        # TODO
-        pass
+    if (qos == 3):  # proportionaly but aware of other flows
+        nouse = list(set(db.unavailable_lsps(2, eastOriented)))
+        nouse.sort()
+
+        use = []
+
+        if len(nouse) == 4:
+            use = range(4)
+        else:
+            for i in range(4):
+                if not (i in nouse):
+                    use.append(i)
+                else:
+                    del bw[i]
+        bw = [0] + bw
+        randf = random.random() * sum(bw)
+
+        for i in range(len(use)):
+            bw[i+1] = bw[i+1] + bw[i]
+            if randf > bw[i] and randf < bw[i+1]:
+                return use[i]
+
+        return random.choice(use)
 
 if __name__ == "__main__":
     print cal_healthest(0)

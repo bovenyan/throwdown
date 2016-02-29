@@ -115,55 +115,50 @@ class SimpleSwitch(app_manager.RyuApp):
                 return
 
             # get healthest lsp
-            if (ip_pkt.proto == 6):  # tcp
-                print "received IP packet"
+            if (ip_pkt.proto == 6):  # TCP will be scheduled 
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
-                # TODO: import qos
-                #qos = db.check_registered_qos(6, tcp_pkt.src_port,
-                #                                 tcp_pkt.dst_port)
-                #if qos is None:
-                #    qos = default_qos
-                qos = 1
-                allocated_lsp = cal_healthest(qos)
+                qos = 3
+                app_id = 1   # Wget has APP id 1
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
-                               allocated_lsp)
-                # commit_flow
-                # ... .
+                               qos, app_id)
+                self.packet_out(datapath, msg.data, in_port,
+                                self.vBundle_info[2])
 
-            elif(ip_pkt.proto == 17):  # udp
+            elif(ip_pkt.proto == 17):  # RTSP will be scheduled greedily
                 udp_pkt = pkt.get_protocol(udp.udp)
-                # qos = db.check_registered_flow(17, udp_pkt.src_port,
-                #                               udp_pkt.dst_port)
-                qos = 1
-                allocated_lsp = cal_healthest(qos)
+                qos = 0
+                app_id = 2   # RTSP has APP id 2 
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
-                               allocated_lsp)
+                               qos, app_id)
+                self.packet_out(datapath, msg.data, in_port,
+                                self.vBundle_info[2])
 
-            else:  # icmp is hard timed out after 15 seconds
-                # TODO warning, this will corrupt the end2end ping
-                allocated_lsp = cal_healthest(0)
+            else:   # icmp will be scheduled greedily (hard timeout 20)
+                qos = 0
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
-                               allocated_lsp, 20)
+                               qos, 0, 20)
+                self.packet_out(datapath, msg.data, in_port,
+                                self.vBundle_info[2])
 
-            self.packet_out(datapath, msg.data, in_port,
-                            self.vBundle_info[2])
-
-    def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0, hTime=0):
-        if (sPort is None):   # random for icmp packets
-            cookie = 10000
+    def handle_ip(self, dpid, proto, sPort=None, dPort=None, qos=0,
+                  app_id=0, h_timeout=0):
+        lsp_id = cal_healthest(qos)
+        if (sPort is None):
+            cookie = random.randint(1,65535)
         else:
             cookie = sPort * 65536 + dPort
-
+        
         if (dpid == self.datapaths[0].id):  # in from west
+            db.commit_flow(cookie, lsp_id, proto, sPort, dPort, qos, app_id)
             # handle west
             datapath = self.datapaths[0]
             nat_src = self.path_info[lsp_id][0]
             nat_dst = self.path_info[lsp_id][1]
             self.create_nat(datapath, self.vBundle_info[2],
                             self.path_info[lsp_id][2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100, hTime)
+                            proto, cookie, sPort, dPort, 10, 100, h_timeout)
 
             # handle east
             datapath = self.datapaths[1]
@@ -171,16 +166,18 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.vBundle_info[1]
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100, hTime)
+                            proto, cookie, sPort, dPort, 10, 100, h_timeout)
+            print "West -> East: flow ready, selected lsp: " + str(lsp_id)
 
         elif (dpid == self.datapaths[1].id):   # in from east
+            db.commit_flow(cookie, lsp_id+4, proto, sPort, dPort, qos, app_id)
             # handle east
             datapath = self.datapaths[1]
             nat_src = self.path_info[lsp_id][1]
             nat_dst = self.path_info[lsp_id][0]
             self.create_nat(datapath, self.vBundle_info[2],
                             self.path_info[lsp_id][2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100, hTime)
+                            proto, cookie, sPort, dPort, 10, 100, h_timeout)
 
             # handle east
             datapath = self.datapaths[0]
@@ -188,12 +185,12 @@ class SimpleSwitch(app_manager.RyuApp):
             nat_dst = self.vBundle_info[0]
             self.create_nat(datapath, self.path_info[lsp_id][2],
                             self.vBundle_info[2], nat_src, nat_dst,
-                            proto, cookie, sPort, dPort, 10, 100, hTime)
+                            proto, cookie, sPort, dPort, 10, 100, h_timeout)
+            print "East -> West: flow ready, selected lsp: " + str(lsp_id)
 
-        print "flow ready, selected lsp: " + str(lsp_id)
 
-    def add_flow(self, datapath, match, actions, cookie=0,
-                 idle_timeout=10, priority=100, hard_timeout=0):
+    def add_flow(self, datapath, match, actions, cookie=0, idle_timeout=10,
+                 priority=100, hard_timeout=0):
         ofproto = datapath.ofproto
         parser = datapath.ofproto_parser
         inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
@@ -201,8 +198,8 @@ class SimpleSwitch(app_manager.RyuApp):
         mod = parser.OFPFlowMod(
             datapath=datapath, match=match,
             command=ofproto.OFPFC_ADD, idle_timeout=idle_timeout,
-            hard_timeout=hard_timeout,
-            priority=priority, cookie=cookie, instructions=inst)
+            hard_timeout=hard_timeout, priority=priority,
+            cookie=cookie, instructions=inst)
         datapath.send_msg(mod)
 
     def del_flow(self, cookie):
@@ -286,20 +283,37 @@ class SimpleSwitch(app_manager.RyuApp):
             in_port=in_port, actions=actions, data=data)
         datapath.send_msg(out)
 
+
     def create_nat(self, datapath, in_port, out_port, nat_src, nat_dst, proto,
-                   cookie, sPort=None, dPort=None, time_out=0, priority=100):
+                   cookie, sPort=None, dPort=None, timeout=0, priority=100,
+                   h_timeout=0):
         parser = datapath.ofproto_parser
         match = None
         if (sPort is None and dPort is None):
             match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
                                     ip_proto=proto, in_port=in_port)
         else:
-            match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
-                                    ip_proto=proto, tcp_src=sPort,
-                                    tcp_dst=dPort, in_port=in_port)
+            if (proto == 6):
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                        ip_proto=proto, tcp_src=sPort,
+                                        tcp_dst=dPort, in_port=in_port)
+            if (proto == 17):
+                match = parser.OFPMatch(eth_type=ether_types.ETH_TYPE_IP,
+                                        ip_proto=proto, udp_src=sPort,
+                                        udp_dst=dPort, in_port=in_port)
+                
         actions = [parser.OFPActionSetField(ipv4_src=nat_src),
                    parser.OFPActionSetField(eth_src=self.arptable[nat_src]),
                    parser.OFPActionSetField(ipv4_dst=nat_dst),
                    parser.OFPActionSetField(eth_dst=self.arptable[nat_dst]),
                    parser.OFPActionOutput(out_port)]
-        self.add_flow(datapath, match, actions, cookie, time_out, priority)
+
+        ofproto = datapath.ofproto
+        inst = [parser.OFPInstructionActions(ofproto.OFPIT_APPLY_ACTIONS,
+                                             actions)]
+        mod = parser.OFPFlowMod(
+            datapath=datapath, match=match,
+            command=ofproto.OFPFC_ADD, idle_timeout=timeout,
+            hard_timeout=h_timeout, priority=priority,
+            cookie=cookie, instructions=inst)
+        datapath.send_msg(mod)
