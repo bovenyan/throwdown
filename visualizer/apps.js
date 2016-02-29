@@ -7,17 +7,24 @@ var apps = function (p) {
 	var links = [];
 	var lsps = [];
 	var flows = [];
+	var apps = [];
+
+	var appNames = [
+	'iperf',
+	'wget',
+	'video'
+	];
 
 	// color schema
 	var colors = [
-	'rgba(0,64,16,0.5)',
-	'rgba(0,18,229,0.5)',
-	'rgba(127,1,0,0.5)',
-	'rgba(191,149,0,0.5)',
-	'rgba(255,0,0,0.5)',
-	'rgba(225,118,0,1)',
-	'rgba(101,0,127,1)',
-	'rgba(0,192,229,0.5)'
+	'rgba(0,64,16,0.7)',
+	'rgba(0,18,229,0.7)',
+	'rgba(127,1,0,0.7)',
+	'rgba(255,0,170,0.7)',
+	'rgba(255,0,0,0.7)',
+	'rgba(225,118,0,0.7)',
+	'rgba(101,0,127,0.7)',
+	'rgba(0,125,255,0.7)'
 	];
 
 	// counter for northstar update
@@ -34,13 +41,16 @@ var apps = function (p) {
 
 	// mouse press event handler
 	function onMousePressed() {
-		for (var i = 0; i < buttons.length; i++) {
-			console.log(i);
-			if (p.mouseX > buttons[i].l && p.mouseX < buttons[i].r && p.mouseY > buttons[i].u && p.mouseY < buttons[i].b) {
-				if (buttons[i].show) {
-					buttons[i].show = false;
+		for (var i = 0; i < apps.length; i++) {
+			// console.log(i);
+			if (p.mouseX > apps[i].l && p.mouseX < apps[i].r && p.mouseY > apps[i].u && p.mouseY < apps[i].b) {
+				if (apps[i].show) {
+					apps[i].show = false;
 				} else {
-					buttons[i].show = true;
+					for (var j = 0; j < apps.length; j++) {
+						apps[j].show = false;
+					}
+					apps[i].show = true;
 				}
 			}
 		}
@@ -109,6 +119,18 @@ var apps = function (p) {
 			buttons.push(button);
 		}
 
+		for (var i = 0; i < 4; i++) {
+			var mApp = {
+				lsps: [],
+				show: false,
+				l: width*0.2*i,
+				r: width*0.2*i+width*0.1,
+				u: height*0.9,
+				b: height
+			};
+			apps.push(mApp);
+		}
+
 		// Establish socket between browser and server
 		socket = io.connect('http://localhost:8080');
 		socket.emit('northstar');
@@ -139,6 +161,7 @@ var apps = function (p) {
 			// console.log('New LSPs information received');
 
 			socket.emit('mysql_lsps');
+			socket.emit('get_mysql_flows');
 			// flows = [];
 			// for (var i = 0; i < 8; i++) {
 			// 	// console.log(lsps[i]);
@@ -154,7 +177,25 @@ var apps = function (p) {
 		})
 
 		socket.on('mysql_lsps_answer', function(data) {
+			// console.log(data);
 			flows = data;
+		});
+
+		socket.on('mysql_flows', function (data) {
+
+			for (var i = 0; i < apps.length; i++) {
+				apps[i].lsps = [];
+			}
+
+			for (var i = 0; i < data.length; i++) {
+				if (data[i].lsp < 5) {
+					apps[data[i].app_id].lsps.push(data[i].lsp+3);
+				} else {
+					apps[data[i].app_id].lsps.push(data[i].lsp-5);
+				}
+			}
+
+			// console.log(apps);
 		});
 	}
 
@@ -178,15 +219,15 @@ var apps = function (p) {
 				redisUpdate = 0;
 			}
 
-			// if (mySQLUpdate < 75) {
-			// 	mySQLUpdate++;
-			// } else {
-			// 	socket.emit('mysql_lsps');
-			// 	// for (var i = 0; i < flows.length; i++) {
-			// 	// 	flows[i].health = p.random(1);
-			// 	// }
-			// 	mySQLUpdate = 0;
-			// }
+			if (mySQLUpdate < 75) {
+				mySQLUpdate++;
+			} else {
+				socket.emit('get_mysql_flows');
+				// for (var i = 0; i < flows.length; i++) {
+				// 	flows[i].health = p.random(1);
+				// }
+				mySQLUpdate = 0;
+			}
 		}
 
 		p.background(255);
@@ -372,6 +413,68 @@ var apps = function (p) {
 			}
 			if (i >= 4) {
 				p.line(width*0.1+w, height*0.2*(i-4)+h/2.0, nodes[0].x, nodes[0].y);
+			}
+		}
+
+		for (var i = 0; i < apps.length; i++) {
+
+			var width = p.width;
+			var height = p.height;
+			// console.log(width + " " + height);
+			var w = width*0.07;
+			var h = height*0.1;
+
+			p.stroke(0);
+			p.strokeWeight(1);
+			if (apps[i].show) {
+				p.fill(100, 220, 255);
+			} else {
+				p.fill(0, 90, 255);
+			}
+			p.rect(apps[i].l, apps[i].u, apps[i].r-apps[i].l, apps[i].b-apps[i].u);
+
+			p.textSize(20);
+			p.noStroke();
+			p.strokeWeight(1);
+			if (apps[i].show) {
+				p.fill(0);
+			} else {
+				p.fill(255);
+			}
+			p.text("APP", apps[i].l+20, apps[i].b-20);
+
+			if (apps[i].show) {
+				for (var j = 0; j < apps[i].lsps.length; j++) {
+					p.strokeWeight(4);
+					if (apps[i].lsps[j] < 4) {
+						p.stroke(colors[apps[i].lsps[j]]);
+						p.line(p.width*0.89, p.height*0.2*apps[i].lsps[j]+p.height*0.05+4, p.width*0.95, p.height*0.35+4);
+						p.line(width*0.82, height*0.2*apps[i].lsps[j]+h/2.0+4, nodes[6].x, nodes[6].y+4);
+						for (var k = 0; k < lsps[apps[i].lsps[j]].links.length; k++) {
+							p.line(
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endA-1].x,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endA-1].y+4,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endZ-1].x,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endZ-1].y+4);
+						}
+						p.line(p.width*0.1, p.height*0.2*apps[i].lsps[j]+p.height*0.05+4, p.width*0.05, p.height*0.35+4);
+						p.line(width*0.1+w, height*0.2*apps[i].lsps[j]+h/2.0+4, nodes[0].x, nodes[0].y+4);
+					} else {
+						p.stroke(colors[apps[i].lsps[j]]);
+						p.line(p.width*0.1, p.height*0.2*(apps[i].lsps[j]-4)+p.height*0.05-4, p.width*0.05, p.height*0.35-4);
+						p.line(width*0.1+w, height*0.2*(apps[i].lsps[j]-4)+h/2.0-4, nodes[0].x, nodes[0].y-4);
+						// console.log(lsps[apps[i].lsps[j]]);
+						for (var k = 0; k < lsps[apps[i].lsps[j]].links.length; k++) {
+							p.line(
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endA-1].x,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endA-1].y-4,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endZ-1].x,
+								nodes[links[lsps[apps[i].lsps[j]].links[k]].endZ-1].y-4);
+						}
+						p.line(p.width*0.89, p.height*0.2*(apps[i].lsps[j]-4)+p.height*0.05-4, p.width*0.95, p.height*0.35-4);
+						p.line(width*0.82, height*0.2*(apps[i].lsps[j]-4)+h/2.0-4, nodes[6].x, nodes[6].y-4);
+					}
+				}
 			}
 		}
 	}

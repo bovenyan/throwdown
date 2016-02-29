@@ -3,14 +3,14 @@ var plot = function (p) {
 
 	var lsps = [];
 	var plots = [];
-	var name = ['SF_NY_1',
-				'SF_NY_2',
-				'SF_NY_3',
-				'SF_NY_4',
-				'NY_SF_1',
+	var name = ['NY_SF_1',
 				'NY_SF_2',
 				'NY_SF_3',
-				'NY_SF_4'];
+				'NY_SF_4',
+				'SF_NY_1',
+				'SF_NY_2',
+				'SF_NY_3',
+				'SF_NY_4'];
 
 	var mySQLUpdate = 0;
 	var toShow = 0;
@@ -48,7 +48,7 @@ var plot = function (p) {
 				plots[i].bw.shift();
 				plots[i].bw.push(lsps[i].bandwidth/1000.0);
 				plots[i].latency.shift();
-				plots[i].latency.push(lsps[i].latency/100);
+				plots[i].latency.push(lsps[i].latency/400.0);
 				plots[i].ls.shift();
 				plots[i].ls.push(lsps[i].loss_rate);
 				// console.log(plots[i].bw);
@@ -177,7 +177,7 @@ var plot = function (p) {
 		p.fill(0, 0, 255);
 		p.stroke(0, 0, 255);
 		p.strokeWeight(2);
-		p.text("100ms", 120, 20);
+		p.text("400ms", 120, 20);
 
 		p.textSize(20);
 		p.fill(0, 0, 255);

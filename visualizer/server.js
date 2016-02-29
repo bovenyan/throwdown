@@ -363,6 +363,17 @@ io.sockets.on('connection',
 			
 		});
 
+		socket.on('get_mysql_flows', function() {
+			mysqlClient.query('select * from flow', function (err, results, fields) {
+				if (err) return console.log(err);
+
+				var data = JSON.parse(JSON.stringify(results));
+				// console.log(data);
+
+				socket.emit('mysql_flows', data);
+			});
+		});
+
 		// listen to disconnet information
 		socket.on('disconnet', function () {
 			console.log("Client has disconnected");

@@ -3,14 +3,14 @@ var redis = require("redis"),
 
 client.keys('*', function (err, keys) {
   if (err) return console.log(err);
-  console.log(keys);
+  // console.log(keys);
 
-  // client.lrange(keys[0], 0, -1, function(err, values){
-  // 	// console.log(err);
-  // 	console.log(JSON.parse(values[0]));
-  // });
+  client.lrange('chicago:ge-1/0/2:output-error-list', 0, -1, function(err, values){
+  	// console.log(err);
+  	console.log(JSON.parse(values[0]).stats[0]['output-drops']);
+  });
 
-  console.log(client.lrange(keys[0], 0, -1));
+  // console.log(client.lrange(keys[0], 0, -1));
 
   // client.hgetall(keys[0], function (err, dbset) {
   // 	console.log(err);

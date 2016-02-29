@@ -24,7 +24,7 @@ var wget = function (p) {
 			l: width*0.02,
 			r: width*0.12,
 			u: height*0.02,
-			b: height*0.12,
+			b: height*0.07,
 			enabled: true
 		}
 
@@ -100,7 +100,7 @@ var wget = function (p) {
 		p.noStroke();
 		p.strokeWeight(1);
 		p.fill(0);
-		p.text("Max rate: " + maxRate + " Bbps", b.r+20, b.u+60);
+		p.text("1000Bbps", b.r+20, b.u+60);
 	}
 
 	function mouseIn(mx, my, b) {
@@ -134,13 +134,13 @@ var wget = function (p) {
 			var alp = wgets[i].progress/100.0;
 			p.fill('rgba(255,65,0,'+alp+')');
 			// p.fill(c);
-			p.rect(p.width*0.5/len*i, p.height-p.height*0.88*wgets[i].rate/maxRate, p.width*0.5/len, p.height*0.88*wgets[i].rate/maxRate);
+			p.rect(p.width*0.5/len*i, p.height-p.height*0.88*wgets[i].rate/1000, p.width*0.5/len, p.height*0.88*wgets[i].rate/1000);
 
 			p.textSize(15);
 			p.noStroke();
 			p.strokeWeight(2);
 			p.fill('rgba(255,65,0,'+alp+')');
-			p.text(wgets[i].rate, p.width*0.5/len*i, p.height-p.height*0.88*wgets[i].rate/maxRate);
+			p.text(wgets[i].rate, p.width*0.5/len*i, p.height-p.height*0.88*wgets[i].rate/1000);
 
 			p.noStroke();
 			p.strokeWeight(0);

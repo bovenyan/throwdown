@@ -9,14 +9,14 @@ var topo = function (p) {
 
 	// color schema
 	var colors = [
-	'rgba(0,64,16,0.5)',
-	'rgba(0,18,229,0.5)',
-	'rgba(127,1,0,0.5)',
-	'rgba(191,149,0,0.5)',
-	'rgba(255,0,0,0.5)',
-	'rgba(225,118,0,1)',
-	'rgba(101,0,127,1)',
-	'rgba(0,192,229,0.5)'
+	'rgba(0,64,16,0.7)',
+	'rgba(0,18,229,0.7)',
+	'rgba(127,1,0,0.7)',
+	'rgba(255,0,170,0.7)',
+	'rgba(255,0,0,0.7)',
+	'rgba(225,118,0,0.7)',
+	'rgba(101,0,127,0.7)',
+	'rgba(0,125,255,0.7)'
 	];
 
 	// counter for northstar update
@@ -50,13 +50,13 @@ var topo = function (p) {
 		p.translate(x1,y1);
 		p.rotate(angle);
 		p.beginShape();
-		p.vertex(0,-2);
-		p.vertex(5*length,-2);
-		p.vertex(5*length,-6);
+		p.vertex(0,-4);
+		p.vertex(5*length,-3);
+		p.vertex(5*length,-9);
 		p.vertex(9*length,0);
-		p.vertex(5*length,6);
-		p.vertex(5*length,2);
-		p.vertex(0,2);
+		p.vertex(5*length,9);
+		p.vertex(5*length,3);
+		p.vertex(0,4);
 		p.endShape(p.CLOSE);
 		p.pop();
 	}
@@ -163,13 +163,14 @@ var topo = function (p) {
 			p.strokeWeight(5*links[i].utilA2Z);
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5);
 			p.fill('rgba(0,0,0,'+links[i].utilA2Z+')');
-			p.noStroke();
+			// p.fill('rgba(0,0,0,1)');
+			p.stroke(0);
 			arrow(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y+5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y+5, 10);
 			p.stroke('rgba(0,0,0,0.5)');
 			p.strokeWeight(5*links[i].utilZ2A);
 			p.line(nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5);
 			p.fill('rgba(0,0,0,'+links[i].utilZ2A+')');
-			p.noStroke();
+			p.stroke(0);
 			arrow(nodes[links[i].endZ-1].x, nodes[links[i].endZ-1].y-5, nodes[links[i].endA-1].x, nodes[links[i].endA-1].y-5, 10);
 		}
 
