@@ -135,39 +135,41 @@ class SimpleSwitch(app_manager.RyuApp):
                 return
 
             # get healthest lsp
-            if (ip_pkt.proto == 6):  # 
+            if (ip_pkt.proto == 6):  # TCP will be scheduled 
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
-                qos = 1
-                allocated_lsp = cal_healthest(qos)
+                qos = 3
+                app_id = 1   # Wget has APP id 1
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
-                               allocated_lsp)
+                               qos, app_id)
                 self.packet_out(datapath, msg.data, in_port,
                                 self.vBundle_info[2])
 
-            elif(ip_pkt.proto == 17):  # udp will be scheduled greedily
+            elif(ip_pkt.proto == 17):  # RTSP will be scheduled greedily
                 udp_pkt = pkt.get_protocol(udp.udp)
-                allocated_lsp = cal_healthest(0)
+                qos = 0
+                app_id = 2   # RTSP has APP id 2 
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                udp_pkt.src_port, udp_pkt.dst_port,
-                               allocated_lsp)
+                               qos, app_id)
                 self.packet_out(datapath, msg.data, in_port,
                                 self.vBundle_info[2])
 
             else:   # icmp will be scheduled greedily (hard timeout 20)
-                allocated_lsp = cal_healthest(0)
                 self.handle_ip(datapath.id, ip_pkt.proto, None, None,
-                               allocated_lsp, 20)
+                               qos, 0, 20)
                 self.packet_out(datapath, msg.data, in_port,
                                 self.vBundle_info[2])
 
 
-    def handle_ip(self, dpid, proto, sPort=None, dPort=None, lsp_id=0,
-                  h_timeout=0):
+    def handle_ip(self, dpid, proto, sPort=None, dPort=None, qos=0,
+                  app_id=0, h_timeout=0):
+        lsp_id = cal_healthest(qos)
         if (sPort is None):
             cookie = random.randint(1,65535)
         else:
             cookie = sPort * 65536 + dPort
+            db.commit_flow(cookie, lsp_id, sPort, dPort, qos, app_id) 
         
         if (dpid == self.datapaths[0].id):  # in from west
             # handle west

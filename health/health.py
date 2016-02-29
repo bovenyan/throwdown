@@ -81,9 +81,28 @@ def cal_healthest(qos=0):
                          + (1-latency[lsp]) * trust_to_ping
 
     if (qos == 3):  # proportionaly but aware of other flows
-        # TODO
+        nouse = set(unavailable_lsps(2))
+        nouse = list(nouse).sort()
 
-        pass
+        use = []
+
+        if len(nouse) == 4:
+            use = range(4)
+        else:
+            for i in range(4):
+                if not (i in nouse):
+                    use.append(i)
+                else:
+                    del bw[i]
+        bw = [0] + bw
+        randf = random.random() * sum(bw)
+
+        for i in range(len(use)):
+            bw[i+1] = bw[i+1] + bw[i]
+            if randf > bw[i] and randf < bw[i+1]:
+                return use[i]
+
+        return random.choice(use)
 
 if __name__ == "__main__":
     print cal_healthest(0)

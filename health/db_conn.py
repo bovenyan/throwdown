@@ -104,16 +104,18 @@ class db_api(object):
             print str(e)
             return None
 
-    def commit_flow(self, found, cookie, lsp, src_port,
+    def commit_flow(self, cookie, lsp, src_port,
                       dst_port, qos_type, app_id=0):
         try:
             conn = self.conn()
             cur = conn.cursor()
             cur.execute("insert into (cookie, protocol, \
-                         src_port, dst_port, lsp, app_id)\
-                         values ({}, {}, {}, {}, {}, \
-                         {})".format(self.cookie, proto, src_port,
-                                     dst_port, lsp, app_id))
+                         src_port, dst_port, lsp, qos_type, app_id)\
+                         values ({}, {}, {}, {}, {}, {}, \
+                         {} on duplicate key update lsp={}, qos_type={},\
+                         app_id={})".format(self.cookie, proto, src_port,
+                                            dst_port, lsp, qos_type, app_id,
+                                            lsp, qos_type, app_id))
             conn.commit()
             conn.close()
             return True
@@ -121,6 +123,21 @@ class db_api(object):
         except Exception, e:
             print str(e)
             return False
+
+    def unavailable_lsps(self, app_id):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+            cur.execute("select lsp from {} where \
+                        app_id={}".format(self.tableflow,
+                                          app_id))
+            res=cur.fetchall()
+            for i in range(len(res)):
+                res[i] = int(res[i])
+            return res
+        except Exception, e:
+            print str(e)
+            return []
 
     def update_health(self, lsp, latency, loss):
         try:
