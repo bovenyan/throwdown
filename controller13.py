@@ -119,6 +119,11 @@ class SimpleSwitch(app_manager.RyuApp):
                 tcp_pkt = pkt.get_protocol(tcp.tcp)
                 qos = 3
                 app_id = 1   # Wget has APP id 1
+
+                if (tcp_pkt.src_port == 8554 or tcp_pkt.dst_port == 8554):
+                    qos= 0
+                    app_id = 2
+
                 self.handle_ip(datapath.id, ip_pkt.proto,
                                tcp_pkt.src_port, tcp_pkt.dst_port,
                                qos, app_id)
@@ -127,6 +132,7 @@ class SimpleSwitch(app_manager.RyuApp):
 
             elif(ip_pkt.proto == 17):  # RTSP will be scheduled greedily
                 udp_pkt = pkt.get_protocol(udp.udp)
+                print "udp received"
                 qos = 0
                 app_id = 2   # RTSP has APP id 2 
                 self.handle_ip(datapath.id, ip_pkt.proto,

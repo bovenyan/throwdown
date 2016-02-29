@@ -107,7 +107,6 @@ class db_api(object):
     def commit_flow(self, cookie, lsp, proto, src_port, dst_port,
                     qos_type, app_id=0):
         try:
-            print "dB Lsp " + str(lsp)
             conn = self.conn()
             cur = conn.cursor()
             cur.execute("insert into {} (cookie, protocol, \
@@ -131,11 +130,11 @@ class db_api(object):
             conn = self.conn()
             cur = conn.cursor()
             if reverse:
-                cur.execute("select lsp-4 from {} where \
+                cur.execute("select lsp-5 from {} where \
                             app_id={} and lsp > 4".format(self.tableflow,
                                                           app_id))
             else:
-                cur.execute("select lsp from {} where \
+                cur.execute("select lsp-1 from {} where \
                             app_id={} and lsp < 5".format(self.tableflow,
                                                           app_id))
             res=cur.fetchall()
@@ -161,6 +160,35 @@ class db_api(object):
             conn.commit()
             conn.close()
             return True
+        except Exception, e:
+            print str(e)
+            return False
+
+    def get_flows(self):
+        try:
+            conn = self.conn()
+            cur = conn.cursor()
+
+            cur.execute("select cookie from {}".format(self.tableflow))
+
+            res=cur.fetchall()
+            res_parsed = []
+            for i in range(len(res)):
+                res_parsed.append(res[i][0])
+            return res
+        except Exception, e:
+            print str(e)
+            return []
+
+    def delete_flows(self, cookies):
+        try:
+            conn = self.conn()
+            for cookie in cookies:
+                cur = conn.cursor()
+                cur.execute("delete from {} where cookie={}".format(
+                    self.tableflow, cookies[i]))
+                conn.commit()
+            conn.close()
         except Exception, e:
             print str(e)
             return False
