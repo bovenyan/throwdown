@@ -105,6 +105,13 @@ io.sockets.on('connection',
 			password: '',
 			database: 'myboly'
 		});
+		var mysqlClient2 = mysql.createConnection({
+			host: 'localhost',
+			port: 9001,
+			user: 'root',
+			password: '',
+			database: 'myboly'
+		});
 
 		function findNode(ip) {
 			for (var i = 0; i < nodes.length; i++) {
@@ -329,7 +336,7 @@ io.sockets.on('connection',
 		});
 
 		socket.on('mysql_lsps', function() {
-				mysqlClient.query('select * from lsp', function (err, results, fields) {
+			mysqlClient.query('select * from lsp', function (err, results, fields) {
 				if (err) return console.log(err);
 
 				// console.log(JSON.stringify(results));
@@ -346,6 +353,38 @@ io.sockets.on('connection',
 				// console.log(interfaces);
 				socket.emit('mysql_lsps_answer', interfaces);
 				console.log('LSP information in MySQL sent to client');
+			});
+		});
+
+		socket.on('get_wget_stat', function() {
+			mysqlClient.query('select * from wget_stats', function (err, results, fields) {
+				if (err) return console.log(err);
+
+				var data1 = JSON.parse(JSON.stringify(results));
+				// socket.emit('wget_stat', data);
+				// console.log('wget statistics sent to client');
+				mysqlClient2.query('select * from wget_stats', function (err, results, fields) {
+					var data2 = JSON.parse(JSON.stringify(results));
+
+					data1 = data1.concat(data2);
+					socket.emit('wget_stat', data1);
+					console.log('wget statistics sent to client.');
+				});
+			});
+		});
+
+		socket.on('run_wget', function() {
+			
+		});
+
+		socket.on('get_mysql_flows', function() {
+			mysqlClient.query('select * from flow', function (err, results, fields) {
+				if (err) return console.log(err);
+
+				var data = JSON.parse(JSON.stringify(results));
+				// console.log(data);
+
+				socket.emit('mysql_flows', data);
 			});
 		});
 
